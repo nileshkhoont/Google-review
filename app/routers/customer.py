@@ -1,0 +1,39 @@
+"""Public, customer-facing endpoints reached after scanning a QR code.
+
+No authentication required — these are opened directly by customers.
+"""
+
+from fastapi import APIRouter, Depends
+
+from app.dependencies import get_customer_service
+from app.schemas.review_schema import CustomerBusinessResponse,  GenerateReviewRequest ,GenerateReviewResponse
+from app.services.customer_service import CustomerService
+
+router = APIRouter(prefix="/api/customer", tags=["Customer"])
+
+
+@router.get("/{slug}", response_model=CustomerBusinessResponse)
+async def get_customer_business(
+    slug: str,
+    customer_service: CustomerService = Depends(get_customer_service),
+):
+    business = await customer_service.get_business_by_slug(slug)
+    return CustomerBusinessResponse(
+        business_name=business["business_name"],
+        service_type=business["service_type"],
+        logo_path=business.get("logo_path"),
+        google_review_link=business["google_review_link"],
+        review_aspects=business.get("review_aspects", []),
+    )
+
+
+@router.post("/{slug}/generate-review", response_model=GenerateReviewResponse)
+async def generate_review(
+    slug: str,
+    data: GenerateReviewRequest,
+    customer_service: CustomerService = Depends(get_customer_service),
+):
+    return await customer_service.generate_review(
+        slug=slug,
+        rating=data.rating,
+        selected_review_aspects=data.selected_review_aspects,)

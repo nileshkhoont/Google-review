@@ -1,0 +1,40 @@
+{% extends "base.html" %}
+{% block title %}Business Details — ReviewQR-AI{% endblock %}
+
+{% block content %}
+<section class="business-details-page" data-requires-auth data-business-id="{{ business_id }}">
+    <div id="businessDetails" class="details-card">
+        <p class="muted">Loading...</p>
+    </div>
+
+    <div class="qr-card">
+        <div class="qr-card-header">
+            <h3>QR Code</h3>
+            <label class="qr-status-toggle">
+                <input type="checkbox" id="qrActiveToggle" checked>
+                <span class="toggle-slider"></span>
+                <span id="qrStatusLabel" class="qr-status-label">Active</span>
+            </label>
+        </div>
+        <div class="qr-image-wrapper">
+            <img id="qrImage" src="" alt="Business QR Code" class="qr-image hidden">
+            <div id="qrDisabledOverlay" class="qr-disabled-overlay hidden">
+                <span>Disabled</span>
+            </div>
+        </div>
+        <div class="qr-actions">
+            <button id="downloadQrBtn" class="btn btn-secondary">Download QR</button>
+            <a id="openCustomerPageBtn" href="#" target="_blank" class="btn btn-primary">Open Customer Page</a>
+        </div>
+    </div>
+
+    <div class="details-actions">
+        <a id="editBusinessBtn" href="#" class="btn btn-secondary">Edit Business</a>
+        <button id="deleteBusinessBtn" class="btn btn-danger">Delete Business</button>
+    </div>
+</section>
+{% endblock %}
+
+{% block extra_scripts %}
+<script src="/static/js/business.js"></script>
+{% endblock %}

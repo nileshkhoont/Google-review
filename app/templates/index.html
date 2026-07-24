@@ -1,0 +1,39 @@
+{% extends "base.html" %}
+{% block title %}ReviewQR-AI — Collect More Google Reviews{% endblock %}
+
+{% block content %}
+<section class="hero">
+    <h1>Turn every customer into a 5-star review</h1>
+    <p class="subtitle">
+        Generate a QR code for your business. Customers scan it, get an AI-written
+        review in seconds, and post it straight to Google.
+    </p>
+    <div class="hero-actions">
+        <a href="/login" class="btn btn-primary">Login</a>
+    </div>
+</section>
+
+<section class="features">
+    <div class="feature-card">
+        <h3>🔗 One QR per business</h3>
+        <p>Print it, stick it on your counter, and let customers scan on their way out.</p>
+    </div>
+    <div class="feature-card">
+        <h3>🤖 AI-written reviews</h3>
+        <p>Every review is unique, natural, and tailored to your business and service.</p>
+    </div>
+    <div class="feature-card">
+        <h3>✅ Customer stays in control</h3>
+        <p>Customers always choose their own star rating and submit the review themselves.</p>
+    </div>
+</section>
+
+<section class="how-it-works">
+    <h2>How it works</h2>
+    <ol>
+        <li>Create your business profile and Google review link.</li>
+        <li>We generate a unique QR code for you to display in-store.</li>
+        <li>Customers scan it, generate an AI review, copy it, and post it on Google.</li>
+    </ol>
+</section>
+{% endblock %}

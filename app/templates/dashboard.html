@@ -1,0 +1,41 @@
+{% extends "base.html" %}
+{% block title %}Dashboard — ReviewQR-AI{% endblock %}
+
+{% block content %}
+<section class="dashboard" data-requires-auth>
+    <div class="dashboard-header">
+        <div>
+            <h2 id="welcomeMessage">Welcome back</h2>
+            <p class="muted">Here's what's happening with your businesses.</p>
+        </div>
+        <a href="/businesses/create" class="btn btn-primary">+ Create Business</a>
+    </div>
+
+    <div class="stats-row">
+        <div class="stat-card">
+            <span class="stat-value" id="businessCount">0</span>
+            <span class="stat-label">Businesses</span>
+        </div>
+    </div>
+
+    <div class="section-header">
+        <h3>Recent Businesses</h3>
+        <a href="/businesses" class="link">View all</a>
+    </div>
+    <div id="recentBusinesses" class="business-grid">
+        <p class="muted">Loading...</p>
+    </div>
+
+    <div class="quick-actions">
+        <h3>Quick Actions</h3>
+        <div class="quick-actions-grid">
+            <a href="/businesses/create" class="quick-action-card">📋 Create a new business</a>
+            <a href="/businesses" class="quick-action-card">🏬 Manage businesses</a>
+        </div>
+    </div>
+</section>
+{% endblock %}
+
+{% block extra_scripts %}
+<script src="/static/js/dashboard.js"></script>
+{% endblock %}

@@ -1,0 +1,52 @@
+{% extends "base.html" %}
+{% block title %}Edit Business — ReviewQR-AI{% endblock %}
+
+{% block content %}
+<section class="form-page" data-requires-auth data-business-id="{{ business_id }}">
+    <div class="form-card">
+        <h2>Edit Business</h2>
+        <p class="muted">Your QR code stays linked to this business unless you delete business.</p>
+
+        <form id="editBusinessForm" class="stacked-form" enctype="multipart/form-data">
+            <label for="businessName">Business Name</label>
+            <input type="text" id="businessName" name="business_name" minlength="2" required>
+
+            <label for="serviceType">Service Type</label>
+            <input type="text" id="serviceType" name="service_type" minlength="2" required>
+
+            <label for="googleReviewLink">Google Review Link</label>
+            <input type="url" id="googleReviewLink" name="google_review_link" required>
+
+            <label for="businessDescription">Business Description (optional)</label>
+            <textarea id="businessDescription" name="business_description" rows="4" style="resize: vertical;"></textarea>
+
+            <div class="form-group">
+                <label>Review Aspects (Optional)</label>
+                <p class="form-help">
+                    Add the things customers may want to mention in their review.
+                </p>
+                <div id="reviewAspectsContainer" class="review-aspects-container"></div>
+                <div class="review-aspect-input">
+                    <input type="text" id="reviewAspectInput" placeholder="Example: Friendly staff">
+                    <button type="button" id="addReviewAspectBtn" class="btn btn-secondary">Add</button>
+                </div>
+            </div>
+            <input type="hidden" id="reviewAspects" name="review_aspects">
+
+            <label for="logo">Replace Logo (optional)</label>
+            <input type="file" id="logo" name="logo" accept="image/*">
+
+            <div id="formError" class="form-error hidden"></div>
+
+            <div class="form-actions">
+                <a href="#" id="cancelEditBtn" class="btn btn-secondary">Cancel</a>
+                <button type="submit" class="btn btn-primary">Save Changes</button>
+            </div>
+        </form>
+    </div>
+</section>
+{% endblock %}
+
+{% block extra_scripts %}
+<script src="/static/js/business.js"></script>
+{% endblock %}

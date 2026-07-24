@@ -1,0 +1,106 @@
+{% extends "base.html" %}
+{% block title %}Leave a Review{% endblock %}
+
+{% block navbar %}
+<nav class="navbar navbar-minimal">
+    <span class="brand">Review<span>QR</span>-AI</span>
+</nav>
+{% endblock %}
+
+{% block content %}
+<section class="customer-landing" data-slug="{{ slug }}">
+    <div class="customer-card">
+        <img id="businessLogo" src="" alt="" class="business-logo hidden">
+        <h2 id="businessName">Loading...</h2>
+        <p id="serviceType" class="muted"></p>
+
+        <div id="qrDisabledState" class="qr-disabled-state hidden">
+            <div class="qr-disabled-icon">🚫</div>
+            <h3>This QR Code is Currently Disabled</h3>
+            <p class="muted">Please contact the business owner or try again later.</p>
+        </div>
+
+        <div id="customerInteractive">
+            <p class="customer-instructions hidden">
+                Tap the button below to generate a review, then copy it and post it on Google.
+            </p>
+
+            <div id="reviewAspectSection" class="review-aspect-section hidden">
+                <label class="review-aspect-title">What did you like about your experience?</label>
+                <div id="customerReviewAspects" class="customer-review-aspects"></div>
+            </div>
+
+            <div id="ratingSelector" class="rating-selector" aria-label="Star rating selector">
+                <span class="rating-star" data-value="1" role="button" tabindex="0" aria-label="1 star">☆</span>
+                <span class="rating-star" data-value="2" role="button" tabindex="0" aria-label="2 stars">☆</span>
+                <span class="rating-star" data-value="3" role="button" tabindex="0" aria-label="3 stars">☆</span>
+                <span class="rating-star" data-value="4" role="button" tabindex="0" aria-label="4 stars">☆</span>
+                <span class="rating-star" data-value="5" role="button" tabindex="0" aria-label="5 stars">☆</span>
+            </div>
+            <div id="selectedRatingValue" class="selected-rating-value muted">&nbsp;</div>
+
+
+            <button id="generateReviewBtn" class="btn btn-primary btn-block hidden">Generate My Review</button>
+            <button id="regenerateReviewBtn" class="btn btn-primary hidden">Generate a different review</button>
+
+            <div id="loadingIndicator" class="loading-indicator hidden">
+                <div class="spinner"></div>
+                <p>Writing your review...</p>
+            </div>
+
+            <div id="reviewResult" class="review-result hidden">
+
+                <div id="reviewNavigator" class="review-navigator hidden">
+
+                    <button type="button" id="previousReviewBtn" class="review-nav-btn">
+                        ❮
+                    </button>
+
+                    <div id="reviewIndicators" class="review-indicators">
+                    </div>
+
+                    <button type="button" id="nextReviewBtn" class="review-nav-btn">
+                        ❯
+                    </button>
+
+                </div>
+                <div id="reviewLanguageSelector" class="review-language-selector hidden">
+                    <button type="button" class="review-language-btn active" data-language="en">
+                        English
+                    </button>
+
+                    <button type="button" class="review-language-btn" data-language="gu">
+                        Gujarati
+                    </button>
+
+                    <button type="button" class="review-language-btn" data-language="hi">
+                        Hindi
+                    </button>
+                </div>
+                <textarea id="reviewText" class="review-textarea" readonly></textarea>
+                <div class="review-actions">
+                    <button id="copyReviewBtn" class="btn btn-secondary">📋 Copy Review</button>
+                    <a id="openGoogleReviewBtn" href="#" target="_blank" class="btn btn-primary">Open Google Review</a>
+                </div>
+
+            </div>
+        </div>
+
+        <div id="customerError" class="form-error hidden"></div>
+
+        <footer class="movya-footer">
+            <p>
+                Powered by
+                <a href="https://www.movya.com" target="_blank" rel="noopener noreferrer">
+                    Movya
+                </a>
+            </p>
+        </footer>
+    </div>
+
+</section>
+{% endblock %}
+
+{% block extra_scripts %}
+<script src="/static/js/customer.js"></script>
+{% endblock %}

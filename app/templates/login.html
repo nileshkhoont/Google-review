@@ -1,0 +1,27 @@
+{% extends "base.html" %}
+{% block title %}Login — ReviewQR-AI{% endblock %}
+
+{% block content %}
+<section class="auth-section">
+    <div class="auth-card">
+        <h2>Welcome back</h2>
+        <p class="auth-subtitle">Login to manage your businesses and QR codes.</p>
+
+        <form id="loginForm" class="auth-form">
+            <label for="email">Email</label>
+            <input type="email" id="email" name="email" placeholder="you@business.com" required>
+
+            <label for="password">Password</label>
+            <input type="password" id="password" name="password" placeholder="Your password" required>
+
+            <div id="formError" class="form-error hidden"></div>
+
+            <button type="submit" class="btn btn-primary btn-block">Login</button>
+        </form>
+    </div>
+</section>
+{% endblock %}
+
+{% block extra_scripts %}
+<script src="/static/js/auth.js"></script>
+{% endblock %}

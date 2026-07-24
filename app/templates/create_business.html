@@ -1,0 +1,55 @@
+{% extends "base.html" %}
+{% block title %}Create Business — ReviewQR-AI{% endblock %}
+
+{% block content %}
+<section class="form-page" data-requires-auth>
+    <div class="form-card">
+        <h2>Create a Business</h2>
+        <p class="muted">A QR code will be generated automatically after you save.</p>
+
+        <form id="createBusinessForm" class="stacked-form" enctype="multipart/form-data">
+            <label for="businessName">Business Name</label>
+            <input type="text" id="businessName" name="business_name" placeholder="Sunset Cafe" required minlength="2">
+
+            <label for="serviceType">Service Type</label>
+            <input type="text" id="serviceType" name="service_type" placeholder="Coffee Shop / Restaurant / Salon..." required minlength="2">
+
+            <label for="googleReviewLink">Google Review Link</label>
+            <input type="url" id="googleReviewLink" name="google_review_link" placeholder="https://g.page/r/..." required>
+            <small class="field-hint">Paste the direct Google review link for your business.</small>
+
+            <label for="businessDescription">Business Description (optional)</label>
+            <textarea id="businessDescription" name="business_description" placeholder="A short description that can be used in generated reviews..." rows="4" style="resize: vertical;"></textarea>
+            
+            <div class="form-group">
+                <label>Review Aspects (Optional)</label>
+                <p class="form-help">
+                    Add the things customers may want to mention in their review.
+                </p>
+                <div id="reviewAspectsContainer" class="review-aspects-container"></div>
+                <div class="review-aspect-input">
+                    <input type="text" id="reviewAspectInput" placeholder="Example: Friendly staff">
+                    <button type="button" id="addReviewAspectBtn" class="btn btn-secondary">Add</button>
+                   
+                </div>
+            </div>
+            <input type="hidden" id="reviewAspects" name="review_aspects">
+
+
+            <label for="logo">Business Logo (optional)</label>
+            <input type="file" id="logo" name="logo" accept="image/*">
+
+            <div id="formError" class="form-error hidden"></div>
+
+            <div class="form-actions">
+                <a href="/businesses" class="btn btn-secondary">Cancel</a>
+                <button type="submit" class="btn btn-primary">Create Business</button>
+            </div>
+        </form>
+    </div>
+</section>
+{% endblock %}
+
+{% block extra_scripts %}
+<script src="/static/js/business.js"></script>
+{% endblock %}

@@ -1,0 +1,24 @@
+{% extends "base.html" %}
+{% block title %}My Businesses — ReviewQR-AI{% endblock %}
+
+{% block content %}
+<section class="business-list-page" data-requires-auth>
+    <div class="dashboard-header">
+        <h2>My Businesses</h2>
+        <a href="/businesses/create" class="btn btn-primary">+ Create Business</a>
+    </div>
+
+    <div id="businessGrid" class="business-list">
+        <p class="muted">Loading...</p>
+    </div>
+
+    <div id="emptyState" class="empty-state hidden">
+        <p>You haven't created any businesses yet.</p>
+        <a href="/businesses/create" class="btn btn-primary">Create your first business</a>
+    </div>
+</section>
+{% endblock %}
+
+{% block extra_scripts %}
+<script src="/static/js/business.js"></script>
+{% endblock %}
