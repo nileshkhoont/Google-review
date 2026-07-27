@@ -73,16 +73,12 @@ class CustomerService:
                 detail="Could not generate a review right now. Please try again.",
             ) from exc
 
-        translated_reviews = await self.review_generator.translate_review_list(
-            review_list
-        )
-
         # Optional history log — never blocks the customer flow if it fails.
         try:
             for review_text in review_list:
                 review_doc = build_review_document(
                     business["_id"],
-                    review_text,    
+                    review_text,
                 )
                 await self.review_repo.create(review_doc)
         except Exception as exc:  # noqa: BLE001
@@ -91,11 +87,36 @@ class CustomerService:
         return {
             "reviews": [
                 {
-                    "translations": review
+                    "en": review_text
                 }
-                for review in translated_reviews
+                for review_text in review_list
             ],
-    
+
             "business_name": business["business_name"],
             "google_review_link": business["google_review_link"],
         }
+
+    async def translate_review(
+        self,
+        slug: str,
+        text: str,
+        language: str,
+    ) -> str:
+        """
+        Translate one review (the variant currently on screen) into one
+        language, on demand — called only when the customer taps that
+        language tab, instead of eagerly translating every generated
+        variant into every language up front.
+        """
+        await self.get_business_by_slug(slug)  # 404/403 checks
+
+        try:
+            return await self.review_generator.translate_single_review(text, language)
+        except Exception as exc:  # noqa: BLE001
+            logger.error(
+                "Review translation to '%s' failed for slug '%s': %s", language, slug, exc
+            )
+            raise HTTPException(
+                status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+                detail="Could not translate the review right now. Please try again.",
+            ) from exc

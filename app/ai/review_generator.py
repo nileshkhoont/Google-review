@@ -283,28 +283,20 @@ class ReviewGenerator:
         )
         return _extract_translated_reviews(last_raw) if last_raw else []
 
-    async def translate_review_list(
-        self,
-        reviews: list[str],
-    ) -> list[dict]:
+    _LANGUAGE_NAMES = {
+        "gu": "Gujarati",
+        "hi": "Hindi",
+    }
+
+    async def translate_single_review(self, text: str, language_code: str) -> str:
         """
-        Translate all reviews into Gujarati and Hindi.
-
-        Each language is retried independently (see _translate_language)
-        so a single bad response for one language doesn't silently fall
-        back to English for the whole batch.
+        Translate one review into one language, on demand (called when the
+        customer switches the language tab for the review currently on
+        screen, rather than eagerly translating every generated variant).
         """
-        gu_reviews = await self._translate_language(reviews, "Gujarati")
-        hi_reviews = await self._translate_language(reviews, "Hindi")
+        language_name = self._LANGUAGE_NAMES.get(language_code)
+        if not language_name:
+            raise ValueError(f"Unsupported language code: {language_code}")
 
-        translated_reviews = []
-
-        for index, english_review in enumerate(reviews):
-            translated_reviews.append(
-                {
-                    "en": english_review,
-                    "gu": gu_reviews[index] if index < len(gu_reviews) else english_review,
-                    "hi": hi_reviews[index] if index < len(hi_reviews) else english_review,
-                }
-            )
-        return translated_reviews
+        translated = await self._translate_language([text], language_name)
+        return translated[0] if translated else text

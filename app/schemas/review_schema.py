@@ -5,20 +5,24 @@ from pydantic import BaseModel, Field
 class GenerateReviewRequest(BaseModel):
     rating: int | None = None
     selected_review_aspects: list[str] = Field(default_factory=list)
-    
 
-class ReviewTranslations(BaseModel):
-    en: str
-    gu: str
-    hi: str
 
 class ReviewVariant(BaseModel):
-    translations: ReviewTranslations
-    
+    en: str
+
 class GenerateReviewResponse(BaseModel):
     reviews: list[ReviewVariant]
     business_name: str
     google_review_link: str
+
+
+class TranslateReviewRequest(BaseModel):
+    text: str
+    language: str  # "gu" | "hi"
+
+
+class TranslateReviewResponse(BaseModel):
+    translation: str
 
 
 class CustomerBusinessResponse(BaseModel):
