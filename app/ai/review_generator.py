@@ -1,9 +1,25 @@
 """Calls Gemini through GeminiClient and returns a cleaned review string."""
 import json
+import re
 from app.config import settings
 from app.ai.ai_factory import get_ai_client
 from app.ai.prompt_builder import  (build_review_prompt,build_review_aspects_prompt, build_translation_prompt,)
 from app.utils.logger import logger
+
+
+# Gemini often wraps its JSON output in a Markdown code fence (```json ... ```
+# or plain ``` ... ```) despite being asked not to. json.loads() chokes on the
+# fence markers even though the JSON inside is valid, so it must be stripped
+# before parsing.
+_CODE_FENCE_PATTERN = re.compile(r"^```(?:json)?\s*(.*?)\s*```$", re.DOTALL)
+
+
+def _strip_code_fences(text: str) -> str:
+    """Remove a surrounding Markdown code fence, if present; otherwise
+    return the (whitespace-trimmed) text unchanged."""
+    stripped = (text or "").strip()
+    match = _CODE_FENCE_PATTERN.match(stripped)
+    return match.group(1).strip() if match else stripped
 
 
 def _clean_review_text(raw_text: str) -> str:
@@ -47,20 +63,24 @@ def _extract_reviews(raw_text: str) -> list[str]:
     """
 
     try:
-        data = json.loads(raw_text)
-
-        reviews = []
-
-        for item in data.get("reviews", []):
-            review = item.get("review", "").strip()
-
-            if review:
-                reviews.append(_clean_review_text(review))
-
-        return reviews
-
-    except Exception:
+        data = json.loads(_strip_code_fences(raw_text))
+    except Exception as exc:
+        logger.warning(
+            "Review JSON parsing failed (%s) | raw response (first 200 chars): %r",
+            exc, (raw_text or "")[:200],
+        )
         return []
+
+    reviews = []
+
+    for item in data.get("reviews", []):
+        review = item.get("review", "").strip()
+
+        if review:
+            reviews.append(_clean_review_text(review))
+
+    logger.info("Review JSON parsing succeeded, extracted %d review(s).", len(reviews))
+    return reviews
 
 
 def _extract_translated_reviews(raw_text: str) -> list[str]:
@@ -78,22 +98,29 @@ def _extract_translated_reviews(raw_text: str) -> list[str]:
     """
 
     try:
-        data = json.loads(raw_text)
-
-        translated_reviews = []
-
-        for item in data.get("reviews", []):
-            review = item.get("review", "").strip()
-
-            if review:
-                translated_reviews.append(
-                    _clean_review_text(review)
-                )
-
-        return translated_reviews
-
-    except Exception:
+        data = json.loads(_strip_code_fences(raw_text))
+    except Exception as exc:
+        logger.warning(
+            "Translated review JSON parsing failed (%s) | raw response (first 200 chars): %r",
+            exc, (raw_text or "")[:200],
+        )
         return []
+
+    translated_reviews = []
+
+    for item in data.get("reviews", []):
+        review = item.get("review", "").strip()
+
+        if review:
+            translated_reviews.append(
+                _clean_review_text(review)
+            )
+
+    logger.info(
+        "Translated review JSON parsing succeeded, extracted %d review(s).",
+        len(translated_reviews),
+    )
+    return translated_reviews
 
 
 def _looks_like_json(text: str) -> bool:
@@ -283,28 +310,20 @@ class ReviewGenerator:
         )
         return _extract_translated_reviews(last_raw) if last_raw else []
 
-    async def translate_review_list(
-        self,
-        reviews: list[str],
-    ) -> list[dict]:
+    _LANGUAGE_NAMES = {
+        "gu": "Gujarati",
+        "hi": "Hindi",
+    }
+
+    async def translate_single_review(self, text: str, language_code: str) -> str:
         """
-        Translate all reviews into Gujarati and Hindi.
-
-        Each language is retried independently (see _translate_language)
-        so a single bad response for one language doesn't silently fall
-        back to English for the whole batch.
+        Translate one review into one language, on demand (called when the
+        customer switches the language tab for the review currently on
+        screen, rather than eagerly translating every generated variant).
         """
-        gu_reviews = await self._translate_language(reviews, "Gujarati")
-        hi_reviews = await self._translate_language(reviews, "Hindi")
+        language_name = self._LANGUAGE_NAMES.get(language_code)
+        if not language_name:
+            raise ValueError(f"Unsupported language code: {language_code}")
 
-        translated_reviews = []
-
-        for index, english_review in enumerate(reviews):
-            translated_reviews.append(
-                {
-                    "en": english_review,
-                    "gu": gu_reviews[index] if index < len(gu_reviews) else english_review,
-                    "hi": hi_reviews[index] if index < len(hi_reviews) else english_review,
-                }
-            )
-        return translated_reviews
+        translated = await self._translate_language([text], language_name)
+        return translated[0] if translated else text

@@ -76,9 +76,17 @@ class Settings(BaseSettings):
     # ---------------------------------------------------------
 
     # Must be a model supported for generateContent by the current Gemini API.
-    # Using the server-side discovered working model.
+    # Pinned to a specific GA model rather than the "-latest" alias: "-latest"
+    # silently follows whatever Google's newest flash model is, and newer
+    # generations typically launch with much stricter free-tier daily quotas
+    # (we hit this — "-latest" had drifted to a model capped at 20 req/day).
+    # gemini-2.5-flash was tried next but returns 404 "no longer available to
+    # new users" on this account/project — Google restricts newer accounts to
+    # its current model generation only. gemini-3.5-flash-lite is confirmed
+    # working live on this account (see chat history) and, being a "lite"
+    # variant, should carry a higher free-tier daily quota than full "flash".
     # NOTE: GeminiClient expects a model *name* (google.generativeai will prefix with "models/" internally).
-    gemini_model: str = "gemini-flash-latest"
+    gemini_model: str = "gemini-3.5-flash-lite"
 
     @property
     def gemini_key_list(self) -> list[str]:

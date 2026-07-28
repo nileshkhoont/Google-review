@@ -64,7 +64,6 @@ document.addEventListener("DOMContentLoaded", async () => {
         return;
     }
 
-    const generateBtn = document.getElementById("generateReviewBtn");
     const regenerateBtn = document.getElementById("regenerateReviewBtn");
 
     const ratingSelector = document.getElementById("ratingSelector");
@@ -158,7 +157,7 @@ document.addEventListener("DOMContentLoaded", async () => {
 
                 currentReviewIndex = index;
 
-                displayCurrentReview();
+                showCurrentReview();
 
             });
 
@@ -168,7 +167,11 @@ document.addEventListener("DOMContentLoaded", async () => {
 
     }
 
-    function displayCurrentReview() {
+    // Renders whatever is already cached for the current review/language.
+    // Assumes the translation (if any is needed) has already been fetched
+    // via ensureTranslation() — call showCurrentReview() instead of this
+    // directly whenever the review or language may have changed.
+    function renderReview() {
 
         if (reviewList.length === 0) {
             return;
@@ -176,8 +179,7 @@ document.addEventListener("DOMContentLoaded", async () => {
 
         const review = reviewList[currentReviewIndex];
 
-        textArea.value =
-            review.translations[currentLanguage];
+        textArea.value = review[currentLanguage] ?? "";
 
         languageButtons.forEach((button) => {
 
@@ -202,6 +204,58 @@ document.addEventListener("DOMContentLoaded", async () => {
 
     }
 
+    // Fetches the translation for `review` into `language` only if it
+    // hasn't been fetched before — English is generated up front, so this
+    // is a no-op for "en". Gujarati/Hindi are translated on demand, one
+    // review at a time, the first time that review/language pair is shown.
+    async function ensureTranslation(review, language) {
+        if (language === "en" || review[language]) {
+            return;
+        }
+        const result = await API.post(`/api/customer/${slug}/translate-review`, {
+            text: review.en,
+            language,
+        });
+        review[language] = result.translation;
+    }
+
+    function setLanguageControlsDisabled(disabled) {
+        languageButtons.forEach((button) => { button.disabled = disabled; });
+        previousReviewBtn.disabled = disabled || currentReviewIndex === 0;
+        nextReviewBtn.disabled = disabled || currentReviewIndex === reviewList.length - 1;
+    }
+
+    // Ensures the currently selected review/language pair is translated
+    // (fetching it on demand if needed), then renders it. Use this instead
+    // of renderReview() anywhere the review index or language may have
+    // just changed.
+    async function showCurrentReview() {
+        if (reviewList.length === 0) {
+            return;
+        }
+
+        const review = reviewList[currentReviewIndex];
+
+        if (currentLanguage === "en" || review[currentLanguage]) {
+            renderReview();
+            return;
+        }
+
+        hideError(errorEl);
+        setLanguageControlsDisabled(true);
+        textArea.value = "Translating...";
+
+        try {
+            await ensureTranslation(review, currentLanguage);
+            renderReview();
+        } catch (err) {
+            showError(errorEl, "Could not translate this review. Please try again.");
+            renderReview();
+        } finally {
+            setLanguageControlsDisabled(false);
+        }
+    }
+
     let touchStartX = 0;
     let touchEndX = 0;
 
@@ -216,7 +270,7 @@ document.addEventListener("DOMContentLoaded", async () => {
 
                 currentReviewIndex++;
 
-                displayCurrentReview();
+                showCurrentReview();
 
             }
 
@@ -229,7 +283,7 @@ document.addEventListener("DOMContentLoaded", async () => {
 
                 currentReviewIndex--;
 
-                displayCurrentReview();
+                showCurrentReview();
 
             }
 
@@ -241,7 +295,7 @@ document.addEventListener("DOMContentLoaded", async () => {
 
         currentLanguage = language;
 
-        displayCurrentReview();
+        showCurrentReview();
 
     }
 
@@ -256,7 +310,6 @@ document.addEventListener("DOMContentLoaded", async () => {
 
     async function generateReview() {
         hideError(errorEl);
-        generateBtn.classList.add("hidden");
         regenerateBtn.classList.add("hidden");
         resultEl.classList.add("hidden");
         loadingEl.classList.remove("hidden");
@@ -283,7 +336,7 @@ document.addEventListener("DOMContentLoaded", async () => {
 
             languageSelector.classList.remove("hidden");
 
-            displayCurrentReview();
+            renderReview();
 
             openGoogleBtn.href = result.google_review_link || googleReviewLink;
 
@@ -294,12 +347,11 @@ document.addEventListener("DOMContentLoaded", async () => {
         } catch (err) {
             console.error("Generate Review Error:", err);
             loadingEl.classList.add("hidden");
-            generateBtn.classList.remove("hidden");
+            regenerateBtn.classList.remove("hidden");
             showError(errorEl, err.message);
         }
     }
 
-    generateBtn.addEventListener("click", generateReview);
     regenerateBtn.addEventListener("click", generateReview);
 
     generateReview();
@@ -312,7 +364,7 @@ document.addEventListener("DOMContentLoaded", async () => {
 
         currentReviewIndex--;
 
-        displayCurrentReview();
+        showCurrentReview();
 
     });
 
@@ -324,7 +376,7 @@ document.addEventListener("DOMContentLoaded", async () => {
 
         currentReviewIndex++;
 
-        displayCurrentReview();
+        showCurrentReview();
 
     });
 

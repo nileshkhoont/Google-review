@@ -6,7 +6,13 @@ No authentication required — these are opened directly by customers.
 from fastapi import APIRouter, Depends
 
 from app.dependencies import get_customer_service
-from app.schemas.review_schema import CustomerBusinessResponse,  GenerateReviewRequest ,GenerateReviewResponse
+from app.schemas.review_schema import (
+    CustomerBusinessResponse,
+    GenerateReviewRequest,
+    GenerateReviewResponse,
+    TranslateReviewRequest,
+    TranslateReviewResponse,
+)
 from app.services.customer_service import CustomerService
 
 router = APIRouter(prefix="/api/customer", tags=["Customer"])
@@ -37,3 +43,17 @@ async def generate_review(
         slug=slug,
         rating=data.rating,
         selected_review_aspects=data.selected_review_aspects,)
+
+
+@router.post("/{slug}/translate-review", response_model=TranslateReviewResponse)
+async def translate_review(
+    slug: str,
+    data: TranslateReviewRequest,
+    customer_service: CustomerService = Depends(get_customer_service),
+):
+    translation = await customer_service.translate_review(
+        slug=slug,
+        text=data.text,
+        language=data.language,
+    )
+    return TranslateReviewResponse(translation=translation)
