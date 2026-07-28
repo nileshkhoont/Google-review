@@ -64,7 +64,6 @@ document.addEventListener("DOMContentLoaded", async () => {
         return;
     }
 
-    const generateBtn = document.getElementById("generateReviewBtn");
     const regenerateBtn = document.getElementById("regenerateReviewBtn");
 
     const ratingSelector = document.getElementById("ratingSelector");
@@ -311,7 +310,6 @@ document.addEventListener("DOMContentLoaded", async () => {
 
     async function generateReview() {
         hideError(errorEl);
-        generateBtn.classList.add("hidden");
         regenerateBtn.classList.add("hidden");
         resultEl.classList.add("hidden");
         loadingEl.classList.remove("hidden");
@@ -349,12 +347,11 @@ document.addEventListener("DOMContentLoaded", async () => {
         } catch (err) {
             console.error("Generate Review Error:", err);
             loadingEl.classList.add("hidden");
-            generateBtn.classList.remove("hidden");
+            regenerateBtn.classList.remove("hidden");
             showError(errorEl, err.message);
         }
     }
 
-    generateBtn.addEventListener("click", generateReview);
     regenerateBtn.addEventListener("click", generateReview);
 
     generateReview();

@@ -1,9 +1,25 @@
 """Calls Gemini through GeminiClient and returns a cleaned review string."""
 import json
+import re
 from app.config import settings
 from app.ai.ai_factory import get_ai_client
 from app.ai.prompt_builder import  (build_review_prompt,build_review_aspects_prompt, build_translation_prompt,)
 from app.utils.logger import logger
+
+
+# Gemini often wraps its JSON output in a Markdown code fence (```json ... ```
+# or plain ``` ... ```) despite being asked not to. json.loads() chokes on the
+# fence markers even though the JSON inside is valid, so it must be stripped
+# before parsing.
+_CODE_FENCE_PATTERN = re.compile(r"^```(?:json)?\s*(.*?)\s*```$", re.DOTALL)
+
+
+def _strip_code_fences(text: str) -> str:
+    """Remove a surrounding Markdown code fence, if present; otherwise
+    return the (whitespace-trimmed) text unchanged."""
+    stripped = (text or "").strip()
+    match = _CODE_FENCE_PATTERN.match(stripped)
+    return match.group(1).strip() if match else stripped
 
 
 def _clean_review_text(raw_text: str) -> str:
@@ -47,20 +63,24 @@ def _extract_reviews(raw_text: str) -> list[str]:
     """
 
     try:
-        data = json.loads(raw_text)
-
-        reviews = []
-
-        for item in data.get("reviews", []):
-            review = item.get("review", "").strip()
-
-            if review:
-                reviews.append(_clean_review_text(review))
-
-        return reviews
-
-    except Exception:
+        data = json.loads(_strip_code_fences(raw_text))
+    except Exception as exc:
+        logger.warning(
+            "Review JSON parsing failed (%s) | raw response (first 200 chars): %r",
+            exc, (raw_text or "")[:200],
+        )
         return []
+
+    reviews = []
+
+    for item in data.get("reviews", []):
+        review = item.get("review", "").strip()
+
+        if review:
+            reviews.append(_clean_review_text(review))
+
+    logger.info("Review JSON parsing succeeded, extracted %d review(s).", len(reviews))
+    return reviews
 
 
 def _extract_translated_reviews(raw_text: str) -> list[str]:
@@ -78,22 +98,29 @@ def _extract_translated_reviews(raw_text: str) -> list[str]:
     """
 
     try:
-        data = json.loads(raw_text)
-
-        translated_reviews = []
-
-        for item in data.get("reviews", []):
-            review = item.get("review", "").strip()
-
-            if review:
-                translated_reviews.append(
-                    _clean_review_text(review)
-                )
-
-        return translated_reviews
-
-    except Exception:
+        data = json.loads(_strip_code_fences(raw_text))
+    except Exception as exc:
+        logger.warning(
+            "Translated review JSON parsing failed (%s) | raw response (first 200 chars): %r",
+            exc, (raw_text or "")[:200],
+        )
         return []
+
+    translated_reviews = []
+
+    for item in data.get("reviews", []):
+        review = item.get("review", "").strip()
+
+        if review:
+            translated_reviews.append(
+                _clean_review_text(review)
+            )
+
+    logger.info(
+        "Translated review JSON parsing succeeded, extracted %d review(s).",
+        len(translated_reviews),
+    )
+    return translated_reviews
 
 
 def _looks_like_json(text: str) -> bool:
