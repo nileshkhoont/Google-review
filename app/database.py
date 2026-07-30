@@ -38,7 +38,34 @@ class Database:
           unique=True,
           sparse=True
         )
-        await cls.db["qrcodes"].create_index("business_id", unique=True)
+        # social_slug is a second, distinct identifier used only by the
+        # social-media QR code, kept deliberately separate from `slug` (the
+        # review QR's identifier) so the two QR codes encode two different,
+        # unguessable URLs. sparse=True because businesses created before
+        # this field existed are backfilled separately (see main.py).
+        await cls.db["businesses"].create_index(
+          "social_slug",
+          unique=True,
+          sparse=True
+        )
+
+        # Each business now has one QR document per qr_type ("review" and
+        # "social"), so the old single-field unique index on business_id
+        # alone is too strict. Docs created before this existed have no
+        # qr_type at all — backfill them as "review" (the only type that
+        # used to exist) before swapping the index, so their review QR
+        # keeps resolving under the new qr_type-filtered lookups.
+        await cls.db["qrcodes"].update_many(
+            {"qr_type": {"$exists": False}}, {"$set": {"qr_type": "review"}}
+        )
+        try:
+            await cls.db["qrcodes"].drop_index("business_id_1")
+        except Exception:
+            pass
+        await cls.db["qrcodes"].create_index(
+            [("business_id", 1), ("qr_type", 1)], unique=True
+        )
+
         await cls.db["reviews"].create_index("business_id")
 
 

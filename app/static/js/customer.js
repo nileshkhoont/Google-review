@@ -348,6 +348,7 @@ document.addEventListener("DOMContentLoaded", async () => {
             console.error("Generate Review Error:", err);
             loadingEl.classList.add("hidden");
             regenerateBtn.classList.remove("hidden");
+            resultEl.classList.remove("hidden");
             showError(errorEl, err.message);
         }
     }

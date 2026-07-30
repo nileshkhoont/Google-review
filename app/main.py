@@ -19,9 +19,40 @@ from app.routers import auth, business, customer, pages, qr
 from app.utils.logger import logger
 
 
+async def _backfill_social_slugs() -> None:
+    """
+    One-time migration for businesses created before the social-media QR
+    feature existed: they have no `social_slug`, and if a "social" QR
+    document already exists for them (from before social_slug existed) it
+    still encodes the old shared-slug URL. Backfill a dedicated social_slug
+    and (re)generate that QR so it points at the new /s/{social_slug} URL.
+    """
+    from app.repositories.qr_repository import QRRepository
+    from app.services.qr_service import QRService
+    from app.utils.helper import slugify_social
+
+    db = Database.db
+    qr_service = QRService(QRRepository(db))
+
+    cursor = db["businesses"].find({"social_slug": {"$exists": False}})
+    async for biz in cursor:
+        social_slug = slugify_social(biz["business_name"])
+        await db["businesses"].update_one(
+            {"_id": biz["_id"]}, {"$set": {"social_slug": social_slug}}
+        )
+        await qr_service.generate_social_qr_for_business(
+            business_id=biz["_id"],
+            slug=social_slug,
+            business_name=biz["business_name"],
+            logo_path=biz.get("logo_path"),
+        )
+        logger.info("Backfilled social_slug for business %s", biz["_id"])
+
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     await Database.connect()
+    await _backfill_social_slugs()
     yield
     await Database.disconnect()
 

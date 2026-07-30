@@ -18,8 +18,8 @@ function businessCardHTML(biz) {
                 </div>
             </div>
             <div class="business-card-actions">
-                <a href="/businesses/${biz.id}" class="btn btn-secondary">View</a>
-                <a href="/businesses/${biz.id}/edit" class="btn btn-secondary">Edit</a>
+                <a href="/businesses/${biz.id}?from=dashboard" class="btn btn-secondary">View</a>
+                <a href="/businesses/${biz.id}/edit?from=dashboard" class="btn btn-secondary">Edit</a>
             </div>
         </div>
     `;

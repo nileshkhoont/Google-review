@@ -16,6 +16,14 @@ async def create_business(
     google_review_link: str = Form(...),
     business_description: str | None = Form(default=None),
     review_aspects: str | None = Form(default=None),
+    website: str | None = Form(default=None),
+    instagram: str | None = Form(default=None),
+    facebook: str | None = Form(default=None),
+    whatsapp_channel: str | None = Form(default=None),
+    youtube: str | None = Form(default=None),
+    linkedin: str | None = Form(default=None),
+    twitter_x: str | None = Form(default=None),
+    custom_links: str | None = Form(default=None),
     logo: UploadFile | None = File(default=None),
     user_id: str = Depends(get_current_user_id),
     business_service: BusinessService = Depends(get_business_service),
@@ -28,6 +36,14 @@ async def create_business(
         google_review_link=google_review_link,
         business_description=business_description,
         review_aspects=json.loads(review_aspects) if review_aspects else [],
+        website=website,
+        instagram=instagram,
+        facebook=facebook,
+        whatsapp_channel=whatsapp_channel,
+        youtube=youtube,
+        linkedin=linkedin,
+        twitter_x=twitter_x,
+        custom_links=json.loads(custom_links) if custom_links else [],
     )
     return await business_service.create_business(user_id, data, logo)
 
@@ -57,6 +73,14 @@ async def update_business(
     google_review_link: str | None = Form(default=None),
     business_description: str | None = Form(default=None),
     review_aspects: str | None = Form(default=None),
+    website: str | None = Form(default=None),
+    instagram: str | None = Form(default=None),
+    facebook: str | None = Form(default=None),
+    whatsapp_channel: str | None = Form(default=None),
+    youtube: str | None = Form(default=None),
+    linkedin: str | None = Form(default=None),
+    twitter_x: str | None = Form(default=None),
+    custom_links: str | None = Form(default=None),
     logo: UploadFile | None = File(default=None),
     user_id: str = Depends(get_current_user_id),
     business_service: BusinessService = Depends(get_business_service),
@@ -67,6 +91,14 @@ async def update_business(
         google_review_link=google_review_link,
         business_description=business_description,
         review_aspects=json.loads(review_aspects) if review_aspects else None,
+        website=website,
+        instagram=instagram,
+        facebook=facebook,
+        whatsapp_channel=whatsapp_channel,
+        youtube=youtube,
+        linkedin=linkedin,
+        twitter_x=twitter_x,
+        custom_links=json.loads(custom_links) if custom_links is not None else None,
     )
     return await business_service.update_business(user_id, business_id, data, logo)
 
@@ -79,6 +111,16 @@ async def update_business_status(
     business_service: BusinessService = Depends(get_business_service),
 ):
     return await business_service.set_business_status(user_id, business_id, data.is_active)
+
+
+@router.patch("/{business_id}/social-status", response_model=BusinessResponse)
+async def update_social_status(
+    business_id: str,
+    data: BusinessStatusUpdateRequest,
+    user_id: str = Depends(get_current_user_id),
+    business_service: BusinessService = Depends(get_business_service),
+):
+    return await business_service.set_social_status(user_id, business_id, data.is_active)
 
 
 @router.delete("/{business_id}", status_code=status.HTTP_204_NO_CONTENT)

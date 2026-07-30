@@ -13,3 +13,13 @@ def is_valid_google_review_link(url: str) -> bool:
     if not url:
         return False
     return bool(GOOGLE_REVIEW_LINK_PATTERN.match(url.strip()))
+
+
+_URL_PATTERN = re.compile(r"^https?:\/\/.+", re.IGNORECASE)
+
+
+def is_valid_url(url: str) -> bool:
+    """Loose validation that a value is an http(s) URL."""
+    if not url:
+        return False
+    return bool(_URL_PATTERN.match(url.strip()))

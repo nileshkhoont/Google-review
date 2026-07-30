@@ -48,6 +48,14 @@ class BusinessService:
             google_review_link=data.google_review_link,
             business_description=data.business_description,
             review_aspects=data.review_aspects,
+            website=data.website,
+            instagram=data.instagram,
+            facebook=data.facebook,
+            whatsapp_channel=data.whatsapp_channel,
+            youtube=data.youtube,
+            linkedin=data.linkedin,
+            twitter_x=data.twitter_x,
+            custom_links=[link.model_dump() for link in data.custom_links],
         )
         await self.business_repo.create(business_doc)
 
@@ -57,10 +65,16 @@ class BusinessService:
                 business_doc["_id"], {"logo_path": logo_path}
             )
 
-        # Every new business automatically gets a QR code (per project spec).
+        # Every new business automatically gets both QR codes (per project spec).
         await self.qr_service.generate_qr_for_business(
             business_id=business_doc["_id"],
             slug=business_doc["slug"],
+            business_name=business_doc["business_name"],
+            logo_path=business_doc.get("logo_path"),
+        )
+        await self.qr_service.generate_social_qr_for_business(
+            business_id=business_doc["_id"],
+            slug=business_doc["social_slug"],
             business_name=business_doc["business_name"],
             logo_path=business_doc.get("logo_path"),
         )
@@ -113,8 +127,15 @@ class BusinessService:
         updated = await self.business_repo.update(business_id, {"is_active": is_active})
         logger.info("Business %s is_active set to %s by owner %s", business_id, is_active, owner_id)
         return serialize_doc(updated)
-    
-    
+
+    async def set_social_status(self, owner_id: str, business_id: str, is_active: bool) -> dict:
+        doc = await self.business_repo.get_by_id(business_id)
+        self._ensure_owned(doc, owner_id)
+
+        updated = await self.business_repo.update(business_id, {"social_is_active": is_active})
+        logger.info("Business %s social_is_active set to %s by owner %s", business_id, is_active, owner_id)
+        return serialize_doc(updated)
+
     async def generate_review_aspects(self,service_type: str,business_description: str | None = None,) -> list[str]:
         return await self.review_generator.generate_review_aspects(
         service_type=service_type,

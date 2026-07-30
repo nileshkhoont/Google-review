@@ -4,15 +4,21 @@
 {% block content %}
 <section class="form-page" data-requires-auth data-business-id="{{ business_id }}">
     <div class="form-card">
+        <a href="/dashboard" id="backLink" class="back-link"><span class="back-arrow">❮</span> Back</a>
         <h2>Edit Business</h2>
         <p class="muted">Your QR code stays linked to this business unless you delete business.</p>
 
         <form id="editBusinessForm" class="stacked-form" enctype="multipart/form-data">
-            <label for="businessName">Business Name</label>
-            <input type="text" id="businessName" name="business_name" minlength="2" required>
-
-            <label for="serviceType">Service Type</label>
-            <input type="text" id="serviceType" name="service_type" minlength="2" required>
+            <div class="form-row">
+                <div class="field">
+                    <label for="businessName">Business Name</label>
+                    <input type="text" id="businessName" name="business_name" minlength="2" required>
+                </div>
+                <div class="field">
+                    <label for="serviceType">Service Type</label>
+                    <input type="text" id="serviceType" name="service_type" minlength="2" required>
+                </div>
+            </div>
 
             <label for="googleReviewLink">Google Review Link</label>
             <input type="url" id="googleReviewLink" name="google_review_link" required>
@@ -21,7 +27,7 @@
             <textarea id="businessDescription" name="business_description" rows="4" style="resize: vertical;"></textarea>
 
             <div class="form-group">
-                <label>Review Aspects (Optional)</label>
+                <label class="form-group-title">Review Aspects (Optional)</label>
                 <p class="form-help">
                     Add the things customers may want to mention in their review.
                 </p>
@@ -32,6 +38,62 @@
                 </div>
             </div>
             <input type="hidden" id="reviewAspects" name="review_aspects">
+
+            <div class="form-group social-links-group">
+                <label class="form-group-title">Social Media Links (Optional)</label>
+                <p class="form-help">
+                    Add any accounts you'd like customers to find from your social QR code. All are optional.
+                </p>
+
+                <div class="social-field">
+                    <label for="website">Website</label>
+                    <input type="url" id="website" name="website" placeholder="https://yourbusiness.com">
+                </div>
+
+                <div class="social-field">
+                    <label for="instagram">Instagram</label>
+                    <input type="url" id="instagram" name="instagram" placeholder="https://instagram.com/yourbusiness">
+                </div>
+
+                <div class="social-field">
+                    <label for="facebook">Facebook</label>
+                    <input type="url" id="facebook" name="facebook" placeholder="https://facebook.com/yourbusiness">
+                </div>
+
+                <div class="social-field">
+                    <label for="whatsappChannel">WhatsApp Channel</label>
+                    <input type="url" id="whatsappChannel" name="whatsapp_channel" placeholder="https://whatsapp.com/channel/...">
+                </div>
+
+                <div class="social-field">
+                    <label for="youtube">YouTube</label>
+                    <input type="url" id="youtube" name="youtube" placeholder="https://youtube.com/@yourbusiness">
+                </div>
+
+                <div class="social-field">
+                    <label for="linkedin">LinkedIn</label>
+                    <input type="url" id="linkedin" name="linkedin" placeholder="https://linkedin.com/company/yourbusiness">
+                </div>
+
+                <div class="social-field">
+                    <label for="twitterX">X (Twitter)</label>
+                    <input type="url" id="twitterX" name="twitter_x" placeholder="https://x.com/yourbusiness">
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label class="form-group-title">Custom Links (Optional)</label>
+                <p class="form-help">
+                    Add any other platform or website — Zomato, Swiggy, Yelp, Booking.com, etc.
+                </p>
+                <div id="customLinksContainer" class="custom-links-container"></div>
+                <div class="custom-link-input">
+                    <input type="text" id="customLinkTitle" placeholder="Title (e.g. Zomato)">
+                    <input type="url" id="customLinkUrl" placeholder="https://...">
+                    <button type="button" id="addCustomLinkBtn" class="btn btn-secondary">Add</button>
+                </div>
+            </div>
+            <input type="hidden" id="customLinks" name="custom_links">
 
             <label for="logo">Replace Logo (optional)</label>
             <input type="file" id="logo" name="logo" accept="image/*">
@@ -48,5 +110,5 @@
 {% endblock %}
 
 {% block extra_scripts %}
-<script src="/static/js/business.js"></script>
+<script src="/static/js/business.js?v={{ asset_version }}"></script>
 {% endblock %}

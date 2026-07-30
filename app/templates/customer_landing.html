@@ -37,10 +37,7 @@
                 <span class="rating-star" data-value="4" role="button" tabindex="0" aria-label="4 stars">☆</span>
                 <span class="rating-star" data-value="5" role="button" tabindex="0" aria-label="5 stars">☆</span>
             </div>
-            <div id="selectedRatingValue" class="selected-rating-value muted">&nbsp;</div>
-
-
-            <button id="regenerateReviewBtn" class="btn btn-primary btn-block hidden">Generate a different review</button>
+            <div id="selectedRatingValue" class="selected-rating-value muted hidden">&nbsp;</div>
 
             <div id="loadingIndicator" class="loading-indicator hidden">
                 <div class="spinner"></div>
@@ -78,8 +75,9 @@
                 </div>
                 <textarea id="reviewText" class="review-textarea" readonly></textarea>
                 <div class="review-actions">
-                    <button id="copyReviewBtn" class="btn btn-secondary">📋 Copy Review</button>
+                    <button id="regenerateReviewBtn" class="btn btn-primary hidden">Generate New</button>
                     <a id="openGoogleReviewBtn" href="#" target="_blank" class="btn btn-primary">Open Google Review</a>
+                    <button id="copyReviewBtn" class="btn btn-secondary hidden">📋 Copy Review</button>
                 </div>
 
             </div>
@@ -87,19 +85,19 @@
 
         <div id="customerError" class="form-error hidden"></div>
 
-        <footer class="movya-footer">
+        <div class="movya-footer">
             <p>
                 Powered by
                 <a href="https://www.movya.com" target="_blank" rel="noopener noreferrer">
                     Movya
                 </a>
             </p>
-        </footer>
+        </div>
     </div>
 
 </section>
 {% endblock %}
 
 {% block extra_scripts %}
-<script src="/static/js/customer.js"></script>
+<script src="/static/js/customer.js?v={{ asset_version }}"></script>
 {% endblock %}

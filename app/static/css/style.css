@@ -155,6 +155,30 @@ a {
     width: 100%;
 }
 
+/* "Back" link — admin pages (create/edit/view business, business list) */
+.back-link {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    margin-bottom: 1.1rem;
+    color: var(--color-muted);
+    font-size: 0.88rem;
+    font-weight: 600;
+}
+
+.back-link:hover {
+    color: var(--color-primary);
+}
+
+.back-link .back-arrow {
+    display: inline-block;
+    transition: transform 0.15s ease;
+}
+
+.back-link:hover .back-arrow {
+    transform: translateX(-3px);
+}
+
 /* Page content wrapper */
 .page-content {
     max-width: 1100px;
@@ -295,6 +319,181 @@ a {
 .auth-form button,
 .stacked-form button {
     margin-top: 1.25rem;
+}
+
+/* Business form (create / edit) — scoped to .form-card / .stacked-form only,
+   never .auth-card / .auth-form, so the login page is untouched. */
+
+.form-page {
+    display: flex;
+    justify-content: center;
+    padding: 1.5rem 1rem 3rem;
+}
+
+.form-page .form-card {
+    max-width: 640px;
+    padding: 2.25rem 2.5rem 2.5rem;
+    border: 1px solid rgba(15, 23, 42, 0.06);
+    border-radius: 20px;
+    box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04), 0 20px 40px rgba(15, 23, 42, 0.06);
+}
+
+.form-page .form-card h2 {
+    font-size: 1.5rem;
+    font-weight: 800;
+    letter-spacing: -0.01em;
+    color: #111827;
+    margin: 0;
+}
+
+.form-page .form-card > p.muted {
+    margin-top: 0.4rem;
+    margin-bottom: 0.5rem;
+    font-size: 0.92rem;
+}
+
+.stacked-form {
+    gap: 0.4rem;
+}
+
+.stacked-form label {
+    color: #374151;
+    font-size: 0.88rem;
+}
+
+.stacked-form input,
+.stacked-form textarea {
+    padding: 0.7rem 0.85rem;
+    border: 1.5px solid var(--color-border);
+    border-radius: 10px;
+    transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.stacked-form input:focus,
+.stacked-form textarea:focus {
+    outline: none;
+    border-color: var(--color-primary);
+    box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.12);
+}
+
+.stacked-form input[type="file"] {
+    padding: 0.5rem;
+    border-style: dashed;
+    background: #fafbfc;
+    font-size: 0.85rem;
+    color: var(--color-muted);
+}
+
+.stacked-form input[type="file"]::file-selector-button {
+    padding: 0.45rem 0.9rem;
+    margin-right: 0.75rem;
+    border: none;
+    border-radius: 7px;
+    background: var(--color-secondary);
+    color: var(--color-text);
+    font-weight: 600;
+    font-size: 0.82rem;
+    cursor: pointer;
+    transition: background 0.15s ease;
+}
+
+.stacked-form input[type="file"]::file-selector-button:hover {
+    background: #e5e7eb;
+}
+
+.form-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 0 1rem;
+}
+
+.field {
+    display: flex;
+    flex-direction: column;
+    gap: 0.3rem;
+}
+
+.field label {
+    margin-top: 0.75rem;
+}
+
+.form-group {
+    background: #f9fafb;
+    border: 1px solid var(--color-border);
+    border-radius: 14px;
+    padding: 1.1rem 1.25rem 1.35rem;
+    margin: 1.5rem 0 0.5rem;
+}
+
+.form-group-title {
+    display: block;
+    margin-top: 0 !important;
+    font-size: 1rem;
+    font-weight: 700;
+    color: #111827;
+}
+
+.form-help {
+    color: var(--color-muted);
+    font-size: 0.84rem;
+    line-height: 1.5;
+    margin: 0.3rem 0 1rem;
+}
+
+.social-links-group {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 0 1rem;
+}
+
+.social-links-group > .form-group-title,
+.social-links-group > .form-help {
+    grid-column: 1 / -1;
+}
+
+.social-field {
+    display: flex;
+    flex-direction: column;
+    gap: 0.3rem;
+}
+
+.social-field label {
+    margin-top: 0.6rem;
+    font-size: 0.82rem;
+}
+
+.review-aspect-input {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.6rem;
+    align-items: center;
+}
+
+.custom-link-input {
+    align-items: center;
+}
+
+.review-aspect-input .btn,
+.custom-link-input .btn,
+.form-group .btn {
+    margin-top: 0;
+    flex-shrink: 0;
+}
+
+.review-aspect-input input {
+    flex: 1;
+    min-width: 0;
+}
+
+.form-actions {
+    margin-top: 2rem;
+    padding-top: 1.25rem;
+    border-top: 1px solid var(--color-border);
+    justify-content: flex-end;
+}
+
+.form-actions .btn {
+    min-width: 130px;
 }
 
 /* Dashboard */
@@ -462,8 +661,46 @@ a {
     text-overflow: ellipsis;
 }
 
-.business-row .qr-status-toggle {
+.qr-status-toggles {
+    display: flex;
+    flex-direction: row;
+    gap: 1.25rem;
     flex: 0 0 auto;
+    background: var(--color-secondary);
+    border-radius: 10px;
+    padding: 0.55rem 0.85rem;
+}
+
+.business-row .qr-status-toggle {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.3rem;
+}
+
+.business-row .qr-status-name {
+    text-align: center;
+    min-width: 0;
+}
+
+.business-row .toggle-slider {
+    width: 34px;
+    height: 20px;
+}
+
+.business-row .toggle-slider::before {
+    width: 14px;
+    height: 14px;
+}
+
+.business-row input[type="checkbox"]:checked + .toggle-slider::before {
+    transform: translateX(14px);
+}
+
+.business-row .qr-status-label {
+    min-width: 0;
+    font-size: 0.82rem;
+    text-align: center;
 }
 
 .business-row-actions {
@@ -580,6 +817,13 @@ a {
     min-width: 3.5rem;
 }
 
+.qr-status-name {
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: var(--color-text);
+    min-width: 4.5rem;
+}
+
 .qr-image-wrapper {
     position: relative;
 }
@@ -664,20 +908,80 @@ a {
     cursor: pointer;
 }
 
+/* Custom third-party links (business form) */
+
+.custom-links-container {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    margin-bottom: 12px;
+}
+
+.custom-link-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 10px;
+    background: #f3f4f6;
+    border-radius: 10px;
+    padding: 10px 14px;
+}
+
+.custom-link-info {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    min-width: 0;
+}
+
+.custom-link-info strong {
+    font-size: 0.9rem;
+}
+
+.custom-link-info span {
+    font-size: 0.8rem;
+    color: var(--color-muted);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.custom-link-actions {
+    display: flex;
+    gap: 6px;
+    flex-shrink: 0;
+}
+
+.custom-link-actions .btn {
+    padding: 0.4rem 0.8rem;
+    font-size: 0.8rem;
+}
+
+.custom-link-input {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+}
+
+.custom-link-input input {
+    flex: 1 1 160px;
+    min-width: 0;
+}
+
 /* Customer landing */
 
 .page-content:has(> .customer-landing) {
     padding: 0;
     max-width: none;
-    min-height: 100vh;
+    min-height: 0;   /* override the generic .page-content min-height: calc(100vh - 130px) */
 }
 
 .customer-landing {
     display: flex;
     justify-content: center;
-    align-items: stretch;   /* card stretches to full height */
-    min-height: 100vh;      /* fills the whole screen */
     width: 100%;
+    min-height: 0;
     padding: 0;              /* was padding-top: 2rem */
 }
 
@@ -685,10 +989,10 @@ a {
     background: #fff;
     border: none;              /* was 1px solid var(--color-border) */
     border-radius: 0;          /* was 18px — no rounded corners on a full-page card */
-    padding: 2rem 1.5rem;      /* a bit more breathing room since it's now full width */
+    padding: 2rem 1.5rem 0;    /* no bottom padding — the footer already has its own spacing, card should end right after it */
     max-width: none;           /* was 460px — REMOVE the cap */
     width: 100%;
-    min-height: 100vh;         /* ADD — fills full height too */
+    min-height: 0;
     text-align: center;
     box-shadow: none;          /* was the drop shadow — not needed edge-to-edge */
 }
@@ -1007,12 +1311,138 @@ a {
     border-top: 1px solid var(--color-border);
 }
 
+/* Social media landing page */
+
+.page-content:has(> .social-landing) {
+    background: linear-gradient(180deg, #f7f9fc 0%, #eef1f8 100%);
+}
+
+.social-landing-card {
+    background: linear-gradient(180deg, #ffffff 0%, #fbfbfe 100%);
+}
+
+.social-landing-card .business-logo {
+    width: 76px;
+    height: 76px;
+    border-radius: 20px;
+    box-shadow: 0 10px 24px rgba(15, 23, 42, 0.12);
+}
+
+.social-landing-card #businessName {
+    font-weight: 800;
+    letter-spacing: -0.01em;
+    color: #111827;
+}
+
+.social-landing-card #serviceType {
+    font-weight: 500;
+    color: var(--color-muted);
+    margin-bottom: 1.5rem;
+}
+
+.social-links-container {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    margin-top: 1.25rem;
+}
+
+.social-link-btn {
+    position: relative;
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    min-height: 70px;
+    padding: 14px 22px;
+    border: 1px solid rgba(15, 23, 42, 0.05);
+    border-radius: 20px;
+    background: var(--tint-bg, #f9fafb);
+    color: var(--color-text);
+    font-weight: 600;
+    font-size: 0.98rem;
+    box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04), 0 6px 16px rgba(15, 23, 42, 0.05);
+    transition: transform 0.18s ease, box-shadow 0.18s ease;
+}
+
+.social-link-btn:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 4px 10px rgba(15, 23, 42, 0.06), 0 14px 28px rgba(15, 23, 42, 0.09);
+}
+
+.social-link-btn:active {
+    transform: translateY(-1px) scale(0.99);
+    box-shadow: 0 2px 6px rgba(15, 23, 42, 0.06);
+}
+
+.social-link-label {
+    flex: 1;
+    text-align: left;
+    letter-spacing: -0.005em;
+}
+
+.social-link-btn::after {
+    content: "";
+    width: 8px;
+    height: 8px;
+    flex-shrink: 0;
+    border-right: 2px solid #b0b6c3;
+    border-top: 2px solid #b0b6c3;
+    transform: rotate(45deg);
+    transition: transform 0.18s ease, border-color 0.18s ease;
+}
+
+.social-link-btn:hover::after {
+    transform: rotate(45deg) translate(2px, -2px);
+    border-color: var(--tint-icon-solid, var(--color-primary));
+}
+
+.social-link-icon {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 46px;
+    height: 46px;
+    border-radius: 50%;
+    background: var(--tint-icon, var(--color-primary));
+    color: #fff;
+    flex-shrink: 0;
+}
+
+.social-link-icon svg {
+    width: 22px;
+    height: 22px;
+}
+
+/* Per-platform pastel tints */
+.social-link-btn--website     { --tint-bg: #eaf3ff; --tint-icon: #3b82f6; --tint-icon-solid: #3b82f6; }
+.social-link-btn--instagram   { --tint-bg: linear-gradient(135deg, #fdf2f8, #f4f0ff); --tint-icon: linear-gradient(135deg, #ec4899, #8b5cf6); --tint-icon-solid: #d946ef; }
+.social-link-btn--facebook    { --tint-bg: #eaf1ff; --tint-icon: #2563eb; --tint-icon-solid: #2563eb; }
+.social-link-btn--whatsapp_channel { --tint-bg: #e9faf0; --tint-icon: #22c55e; --tint-icon-solid: #22c55e; }
+.social-link-btn--youtube     { --tint-bg: #fdeceb; --tint-icon: #ef4444; --tint-icon-solid: #ef4444; }
+.social-link-btn--linkedin    { --tint-bg: #edeeff; --tint-icon: #4f46e5; --tint-icon-solid: #4f46e5; }
+.social-link-btn--twitter_x   { --tint-bg: #f2f3f5; --tint-icon: #1f2937; --tint-icon-solid: #1f2937; }
+.social-link-btn--other       { --tint-bg: #fff1e3; --tint-icon: #f97316; --tint-icon-solid: #f97316; }
+
+.social-landing-card .movya-footer {
+    color: #9aa1b1;
+    letter-spacing: 0.01em;
+}
+
+.social-landing-card .movya-footer a {
+    font-weight: 600;
+}
+
 .movya-footer {
     text-align: center;
     margin-top: 30px;
-    padding: 15px 0;
+    margin-bottom:20px;
+    padding: 0;
     font-size: 12px;
     color: #777;
+}
+
+.movya-footer p {
+    margin: 0;
 }
 
 .movya-footer a {
@@ -1041,14 +1471,30 @@ a {
         padding: 1rem;
     }
 
+    /* Business form (create / edit) */
+
+    .form-page {
+        padding: 1rem 0.5rem 2rem;
+    }
+
+    .form-page .form-card {
+        padding: 1.5rem 1.25rem 1.75rem;
+        border-radius: 16px;
+    }
+
+    .form-row,
+    .social-links-group {
+        grid-template-columns: 1fr;
+    }
+
     /* Customer Page */
 
     .customer-landing {
-        padding: 16px;
+        padding: 16px 16px 0;
     }
 
     .customer-card {
-        padding: 20px 16px;
+        padding: 20px 16px 0;
         border-radius: 16px;
     }
 
@@ -1084,7 +1530,7 @@ a {
     }
 
     .review-textarea {
-        min-height: 220px;
+        min-height: 190px;
     }
 
     .review-actions {
@@ -1094,5 +1540,39 @@ a {
     .review-actions .btn {
         padding: 0.55rem 0.75rem;
         font-size: 0.82rem;
+    }
+
+    .custom-link-item {
+        flex-direction: column;
+        align-items: stretch;
+    }
+
+    .custom-link-actions {
+        justify-content: flex-end;
+    }
+
+    /* Social QR page */
+
+    .social-landing-card .business-logo {
+        width: 64px;
+        height: 64px;
+        border-radius: 16px;
+    }
+
+    .social-link-btn {
+        min-height: 68px;
+        padding: 12px 16px;
+        border-radius: 18px;
+        gap: 12px;
+    }
+
+    .social-link-icon {
+        width: 40px;
+        height: 40px;
+    }
+
+    .social-link-icon svg {
+        width: 20px;
+        height: 20px;
     }
 }

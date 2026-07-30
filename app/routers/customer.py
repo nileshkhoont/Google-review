@@ -30,6 +30,38 @@ async def get_customer_business(
         logo_path=business.get("logo_path"),
         google_review_link=business["google_review_link"],
         review_aspects=business.get("review_aspects", []),
+        website=business.get("website"),
+        instagram=business.get("instagram"),
+        facebook=business.get("facebook"),
+        whatsapp_channel=business.get("whatsapp_channel"),
+        youtube=business.get("youtube"),
+        linkedin=business.get("linkedin"),
+        twitter_x=business.get("twitter_x"),
+        custom_links=business.get("custom_links", []),
+    )
+
+
+@router.get("/social/{social_slug}", response_model=CustomerBusinessResponse)
+async def get_customer_business_by_social_slug(
+    social_slug: str,
+    customer_service: CustomerService = Depends(get_customer_service),
+):
+    """Looked up by the social QR code's distinct slug (see /s/{slug})."""
+    business = await customer_service.get_business_by_social_slug(social_slug)
+    return CustomerBusinessResponse(
+        business_name=business["business_name"],
+        service_type=business["service_type"],
+        logo_path=business.get("logo_path"),
+        google_review_link=business["google_review_link"],
+        review_aspects=business.get("review_aspects", []),
+        website=business.get("website"),
+        instagram=business.get("instagram"),
+        facebook=business.get("facebook"),
+        whatsapp_channel=business.get("whatsapp_channel"),
+        youtube=business.get("youtube"),
+        linkedin=business.get("linkedin"),
+        twitter_x=business.get("twitter_x"),
+        custom_links=business.get("custom_links", []),
     )
 
 

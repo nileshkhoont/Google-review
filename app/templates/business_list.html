@@ -3,9 +3,11 @@
 
 {% block content %}
 <section class="business-list-page" data-requires-auth>
+    <a href="/dashboard" class="back-link"><span class="back-arrow">❮</span> Back</a>
+
     <div class="dashboard-header">
         <h2>My Businesses</h2>
-        <a href="/businesses/create" class="btn btn-primary">+ Create Business</a>
+        <a href="/businesses/create?from=businesses" class="btn btn-primary">+ Create Business</a>
     </div>
 
     <div id="businessGrid" class="business-list">
@@ -14,11 +16,11 @@
 
     <div id="emptyState" class="empty-state hidden">
         <p>You haven't created any businesses yet.</p>
-        <a href="/businesses/create" class="btn btn-primary">Create your first business</a>
+        <a href="/businesses/create?from=businesses" class="btn btn-primary">Create your first business</a>
     </div>
 </section>
 {% endblock %}
 
 {% block extra_scripts %}
-<script src="/static/js/business.js"></script>
+<script src="/static/js/business.js?v={{ asset_version }}"></script>
 {% endblock %}

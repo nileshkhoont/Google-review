@@ -16,6 +16,37 @@ function hideError(el) {
     el.classList.add("hidden");
 }
 
+function escapeHtml(value) {
+    return (value == null ? "" : String(value))
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;")
+        .replace(/'/g, "&#39;");
+}
+
+/**
+ * Reads the current page's own `?from=` context (set by whichever link the
+ * user clicked to get here — see FROM.*Link() below) and resolves it to a
+ * real URL: "dashboard" -> /dashboard, "businesses" -> /businesses.
+ * Falls back to /dashboard when the page was opened without that context
+ * (bookmarked, typed URL, etc).
+ */
+function resolveBackHref() {
+    const from = new URLSearchParams(window.location.search).get("from");
+    if (from === "businesses") return "/businesses";
+    return "/dashboard";
+}
+
+/**
+ * Appends the given `from` context ("dashboard" or "businesses") to a URL,
+ * so pages reached through it know which admin root they should return to.
+ */
+function withFrom(url, from) {
+    const separator = url.includes("?") ? "&" : "?";
+    return `${url}${separator}from=${from}`;
+}
+
 const API = {
     async request(url, options = {}) {
         const response = await fetch(url, {

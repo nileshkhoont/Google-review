@@ -3,6 +3,8 @@
 
 {% block content %}
 <section class="business-details-page" data-requires-auth data-business-id="{{ business_id }}">
+    <a href="/dashboard" id="backLink" class="back-link"><span class="back-arrow">❮</span> Back</a>
+
     <div id="businessDetails" class="details-card">
         <p class="muted">Loading...</p>
     </div>
@@ -11,6 +13,7 @@
         <div class="qr-card-header">
             <h3>QR Code</h3>
             <label class="qr-status-toggle">
+                <span class="qr-status-name">Review QR</span>
                 <input type="checkbox" id="qrActiveToggle" checked>
                 <span class="toggle-slider"></span>
                 <span id="qrStatusLabel" class="qr-status-label">Active</span>
@@ -28,6 +31,28 @@
         </div>
     </div>
 
+    <div class="qr-card">
+        <div class="qr-card-header">
+            <h3>Social Media QR Code</h3>
+            <label class="qr-status-toggle">
+                <span class="qr-status-name">Social QR</span>
+                <input type="checkbox" id="socialQrActiveToggle" checked>
+                <span class="toggle-slider"></span>
+                <span id="socialQrStatusLabel" class="qr-status-label">Active</span>
+            </label>
+        </div>
+        <div class="qr-image-wrapper">
+            <img id="socialQrImage" src="" alt="Social Media QR Code" class="qr-image hidden">
+            <div id="socialQrDisabledOverlay" class="qr-disabled-overlay hidden">
+                <span>Disabled</span>
+            </div>
+        </div>
+        <div class="qr-actions">
+            <button id="downloadSocialQrBtn" class="btn btn-secondary">Download QR</button>
+            <a id="openSocialPageBtn" href="#" target="_blank" class="btn btn-primary">Open Social Page</a>
+        </div>
+    </div>
+
     <div class="details-actions">
         <a id="editBusinessBtn" href="#" class="btn btn-secondary">Edit Business</a>
         <button id="deleteBusinessBtn" class="btn btn-danger">Delete Business</button>
@@ -36,5 +61,5 @@
 {% endblock %}
 
 {% block extra_scripts %}
-<script src="/static/js/business.js"></script>
+<script src="/static/js/business.js?v={{ asset_version }}"></script>
 {% endblock %}

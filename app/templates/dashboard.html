@@ -8,7 +8,7 @@
             <h2 id="welcomeMessage">Welcome back</h2>
             <p class="muted">Here's what's happening with your businesses.</p>
         </div>
-        <a href="/businesses/create" class="btn btn-primary">+ Create Business</a>
+        <a href="/businesses/create?from=dashboard" class="btn btn-primary">+ Create Business</a>
     </div>
 
     <div class="stats-row">
@@ -29,7 +29,7 @@
     <div class="quick-actions">
         <h3>Quick Actions</h3>
         <div class="quick-actions-grid">
-            <a href="/businesses/create" class="quick-action-card">📋 Create a new business</a>
+            <a href="/businesses/create?from=dashboard" class="quick-action-card">📋 Create a new business</a>
             <a href="/businesses" class="quick-action-card">🏬 Manage businesses</a>
         </div>
     </div>
@@ -37,5 +37,5 @@
 {% endblock %}
 
 {% block extra_scripts %}
-<script src="/static/js/dashboard.js"></script>
+<script src="/static/js/dashboard.js?v={{ asset_version }}"></script>
 {% endblock %}

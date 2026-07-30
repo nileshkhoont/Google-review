@@ -24,6 +24,7 @@ def generate_qr_image(
     filename: str,
     business_name: str,
     logo_path: str | None = None,
+    subtitle: str = "Scan to Leave a Review",
 ) -> str:
     """
     Generate a QR code PNG encoding `data_url` and save it as `filename`
@@ -118,8 +119,6 @@ def generate_qr_image(
     # ----------------------------
     # Subtitle
     # ----------------------------
-
-    subtitle = "Scan to Leave a Review"
 
     bbox = draw.textbbox((0, 0), subtitle, font=subtitle_font)
     subtitle_width = bbox[2] - bbox[0]

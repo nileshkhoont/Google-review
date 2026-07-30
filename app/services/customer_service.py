@@ -35,6 +35,21 @@ class CustomerService:
             )
         return business
 
+    async def get_business_by_social_slug(self, social_slug: str) -> dict:
+        """Same as get_business_by_slug(), but looked up via the distinct
+        identifier encoded in the social-media QR code, and gated by its
+        own independent `social_is_active` flag rather than the review QR's
+        `is_active`."""
+        business = await self.business_repo.get_by_social_slug(social_slug)
+        if not business:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Business not found.")
+        if not business.get("social_is_active", True):
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="This QR code has been disabled by the business owner.",
+            )
+        return business
+
     async def generate_review(
         self, 
         slug: str,  

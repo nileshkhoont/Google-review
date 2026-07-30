@@ -23,6 +23,9 @@ class BusinessRepository:
     async def get_by_slug(self, slug: str) -> dict[str, Any] | None:
         return await self.collection.find_one({"slug": slug})
 
+    async def get_by_social_slug(self, social_slug: str) -> dict[str, Any] | None:
+        return await self.collection.find_one({"social_slug": social_slug})
+
     async def list_by_owner(self, owner_id: str) -> list[dict[str, Any]]:
         cursor = self.collection.find({"owner_id": owner_id}).sort("created_at", -1)
         return [doc async for doc in cursor]

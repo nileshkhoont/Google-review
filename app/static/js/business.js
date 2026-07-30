@@ -3,6 +3,8 @@
  * Powers the business list, create, details, and edit pages.
  */
 let reviewAspects = [];
+let customLinks = [];
+let editingCustomLinkIndex = null;
 function resolveLogoUrl(logoPath) {
     if (!logoPath) return null;
     const marker = "app/static/";
@@ -13,6 +15,7 @@ function resolveLogoUrl(logoPath) {
 function businessListRowHTML(biz) {
     const logo = resolveLogoUrl(biz.logo_path);
     const isActive = biz.is_active !== false;
+    const isSocialActive = biz.social_is_active !== false;
     return `
         <div class="business-row" data-business-id="${biz.id}">
             <div class="business-row-info">
@@ -23,15 +26,25 @@ function businessListRowHTML(biz) {
                 </div>
             </div>
             <div class="business-row-actions">
-                <a href="/businesses/${biz.id}" class="btn btn-secondary">View</a>
-                <a href="/businesses/${biz.id}/edit" class="btn btn-secondary">Edit</a>
-                <a href="/api/qr/${biz.id}/download" class="btn btn-secondary">QR</a>
+                <a href="/businesses/${biz.id}?from=businesses" class="btn btn-secondary">View</a>
+                <a href="/businesses/${biz.id}/edit?from=businesses" class="btn btn-secondary">Edit</a>
+                <a href="/api/qr/${biz.id}/download" class="btn btn-secondary">Review QR</a>
+                <a href="/api/qr/${biz.id}/social/download" class="btn btn-secondary">Social QR</a>
             </div>
-            <label class="qr-status-toggle">
-                <input type="checkbox" class="qr-active-toggle" data-business-id="${biz.id}" ${isActive ? "checked" : ""}>
-                <span class="toggle-slider"></span>
-                <span class="qr-status-label">${isActive ? "Active" : "Disabled"}</span>
-            </label>
+            <div class="qr-status-toggles">
+                <label class="qr-status-toggle">
+                    <span class="qr-status-name">Review QR</span>
+                    <input type="checkbox" class="qr-active-toggle" data-business-id="${biz.id}" ${isActive ? "checked" : ""}>
+                    <span class="toggle-slider"></span>
+                    <span class="qr-status-label">${isActive ? "Active" : "Disabled"}</span>
+                </label>
+                <label class="qr-status-toggle">
+                    <span class="qr-status-name">Social QR</span>
+                    <input type="checkbox" class="social-qr-active-toggle" data-business-id="${biz.id}" ${isSocialActive ? "checked" : ""}>
+                    <span class="toggle-slider"></span>
+                    <span class="qr-status-label">${isSocialActive ? "Active" : "Disabled"}</span>
+                </label>
+            </div>
         </div>
     `;
 }
@@ -55,15 +68,20 @@ async function initBusinessListPage() {
 
     grid.addEventListener("change", async (e) => {
         const checkbox = e.target;
-        if (!checkbox.classList.contains("qr-active-toggle")) return;
+        const isReview = checkbox.classList.contains("qr-active-toggle");
+        const isSocial = checkbox.classList.contains("social-qr-active-toggle");
+        if (!isReview && !isSocial) return;
 
         const businessId = checkbox.dataset.businessId;
         const newStatus = checkbox.checked;
         const label = checkbox.closest(".qr-status-toggle").querySelector(".qr-status-label");
+        const endpoint = isReview
+            ? `/api/business/${businessId}/status`
+            : `/api/business/${businessId}/social-status`;
 
         checkbox.disabled = true;
         try {
-            await API.patch(`/api/business/${businessId}/status`, { is_active: newStatus });
+            await API.patch(endpoint, { is_active: newStatus });
             label.textContent = newStatus ? "Active" : "Disabled";
         } catch (err) {
             checkbox.checked = !newStatus;
@@ -78,27 +96,38 @@ async function initCreateBusinessPage() {
     const form = document.getElementById("createBusinessForm");
     if (!form) return;
 
+    const backLink = document.getElementById("backLink");
+    if (backLink) backLink.href = resolveBackHref();
+
     const errorEl = document.getElementById("formError");
     const addAspectBtn = document.getElementById("addReviewAspectBtn");
     const generateAspectBtn =document.getElementById("generateAspectBtn");
     if (addAspectBtn) {
         addAspectBtn.addEventListener("click", addReviewAspect);
     }
-    
+
     if (generateAspectBtn) {
         generateAspectBtn.addEventListener("click",generateReviewAspects);
     }
 
+    const addCustomLinkBtn = document.getElementById("addCustomLinkBtn");
+    if (addCustomLinkBtn) {
+        addCustomLinkBtn.addEventListener("click", addOrUpdateCustomLink);
+    }
+    renderCustomLinks();
+
     form.addEventListener("submit", async (e) => {
         e.preventDefault();
         hideError(errorEl);
-        
+
         updateHiddenInput();
+        updateCustomLinksHiddenInput();
         const formData = new FormData(form);
 
         try {
             const business = await API.post("/api/business", formData);
-            window.location.href = `/businesses/${business.id}`;
+            const from = new URLSearchParams(window.location.search).get("from") || "dashboard";
+            window.location.href = withFrom(`/businesses/${business.id}`, from);
         } catch (err) {
             showError(errorEl, err.message);
         }
@@ -111,6 +140,11 @@ async function initBusinessDetailsPage() {
 
     const businessId = document.querySelector("[data-business-id]").dataset.businessId;
 
+    const backLink = document.getElementById("backLink");
+    if (backLink) backLink.href = resolveBackHref();
+
+    const currentFrom = new URLSearchParams(window.location.search).get("from") || "dashboard";
+
     try {
         const biz = await API.get(`/api/business/${businessId}`);
 
@@ -121,8 +155,9 @@ async function initBusinessDetailsPage() {
             <div class="details-row"><span>Created</span><span>${new Date(biz.created_at).toLocaleDateString()}</span></div>
         `;
 
-        document.getElementById("editBusinessBtn").href = `/businesses/${businessId}/edit`;
+        document.getElementById("editBusinessBtn").href = withFrom(`/businesses/${businessId}/edit`, currentFrom);
         document.getElementById("openCustomerPageBtn").href = `/r/${biz.slug}`;
+        document.getElementById("openSocialPageBtn").href = `/s/${biz.social_slug}`;
 
         // Load QR
         try {
@@ -132,6 +167,16 @@ async function initBusinessDetailsPage() {
             qrImg.classList.remove("hidden");
         } catch (_) {
             // No QR yet — shouldn't normally happen since it's auto-generated.
+        }
+
+        // Load social QR
+        try {
+            await API.get(`/api/qr/${businessId}/social`);
+            const socialQrImg = document.getElementById("socialQrImage");
+            socialQrImg.src = `/api/qr/${businessId}/social/download?t=${Date.now()}`;
+            socialQrImg.classList.remove("hidden");
+        } catch (_) {
+            // No social QR yet — shouldn't normally happen since it's auto-generated.
         }
 
         // QR activation toggle
@@ -161,8 +206,39 @@ async function initBusinessDetailsPage() {
             }
         });
 
+        // Social QR activation toggle
+        const socialQrToggle = document.getElementById("socialQrActiveToggle");
+        const socialQrStatusLabel = document.getElementById("socialQrStatusLabel");
+        const socialQrDisabledOverlay = document.getElementById("socialQrDisabledOverlay");
+
+        function updateSocialQrStatusUI(isActive) {
+            socialQrToggle.checked = isActive;
+            socialQrStatusLabel.textContent = isActive ? "Active" : "Disabled";
+            socialQrDisabledOverlay.classList.toggle("hidden", isActive);
+        }
+
+        updateSocialQrStatusUI(biz.social_is_active !== false);
+
+        socialQrToggle.addEventListener("change", async () => {
+            const newStatus = socialQrToggle.checked;
+            socialQrToggle.disabled = true;
+            try {
+                await API.patch(`/api/business/${businessId}/social-status`, { is_active: newStatus });
+                updateSocialQrStatusUI(newStatus);
+            } catch (err) {
+                updateSocialQrStatusUI(!newStatus);
+                alert(err.message);
+            } finally {
+                socialQrToggle.disabled = false;
+            }
+        });
+
         document.getElementById("downloadQrBtn").addEventListener("click", () => {
             window.location.href = `/api/qr/${businessId}/download`;
+        });
+
+        document.getElementById("downloadSocialQrBtn").addEventListener("click", () => {
+            window.location.href = `/api/qr/${businessId}/social/download`;
         });
 
         document.getElementById("deleteBusinessBtn").addEventListener("click", async () => {
@@ -196,7 +272,17 @@ async function initEditBusinessPage() {
         generateAspectBtn.addEventListener("click",generateReviewAspects);
     }
 
-    document.getElementById("cancelEditBtn").href = `/businesses/${businessId}`;
+    const addCustomLinkBtn = document.getElementById("addCustomLinkBtn");
+    if (addCustomLinkBtn) {
+        addCustomLinkBtn.addEventListener("click", addOrUpdateCustomLink);
+    }
+
+    const backLink = document.getElementById("backLink");
+    if (backLink) backLink.href = resolveBackHref();
+
+    const currentFrom = new URLSearchParams(window.location.search).get("from") || "dashboard";
+
+    document.getElementById("cancelEditBtn").href = withFrom(`/businesses/${businessId}`, currentFrom);
 
     try {
         const biz = await API.get(`/api/business/${businessId}`);
@@ -207,8 +293,17 @@ async function initEditBusinessPage() {
         const descEl = document.getElementById("businessDescription");
         if (descEl) descEl.value = biz.business_description || "";
 
+        const socialFields = ["website", "instagram", "facebook", "whatsapp_channel", "youtube", "linkedin", "twitter_x"];
+        socialFields.forEach((field) => {
+            const input = form.querySelector(`[name="${field}"]`);
+            if (input) input.value = biz[field] || "";
+        });
+
         reviewAspects = [...(biz.review_aspects || [])];
         renderReviewAspects();
+
+        customLinks = (biz.custom_links || []).map((link) => ({ ...link }));
+        renderCustomLinks();
     } catch (err) {
         showError(errorEl, err.message);
         return;
@@ -219,6 +314,7 @@ async function initEditBusinessPage() {
         hideError(errorEl);
 
         updateHiddenInput();
+        updateCustomLinksHiddenInput();
         const formData = new FormData(form);
 
         try {
@@ -226,7 +322,7 @@ async function initEditBusinessPage() {
                 method: "PUT",
                 body: formData,
             });
-            window.location.href = `/businesses/${businessId}`;
+            window.location.href = withFrom(`/businesses/${businessId}`, currentFrom);
         } catch (err) {
             showError(errorEl, err.message);
         }
@@ -289,6 +385,100 @@ function addReviewAspect() {
     input.value = "";
 
     renderReviewAspects();
+}
+
+function updateCustomLinksHiddenInput() {
+    const hidden = document.getElementById("customLinks");
+    if (hidden) {
+        hidden.value = JSON.stringify(customLinks);
+    }
+}
+
+function renderCustomLinks() {
+    const container = document.getElementById("customLinksContainer");
+    if (!container) return;
+
+    container.innerHTML = "";
+
+    customLinks.forEach((link, index) => {
+        const item = document.createElement("div");
+        item.className = "custom-link-item";
+
+        item.innerHTML = `
+            <div class="custom-link-info">
+                <strong>${escapeHtml(link.title)}</strong>
+                <span>${escapeHtml(link.url)}</span>
+            </div>
+            <div class="custom-link-actions">
+                <button type="button" class="btn btn-secondary btn-edit-link" data-index="${index}">Edit</button>
+                <button type="button" class="btn btn-danger btn-remove-link" data-index="${index}">Remove</button>
+            </div>
+        `;
+
+        item.querySelector(".btn-edit-link").addEventListener("click", () => editCustomLink(index));
+        item.querySelector(".btn-remove-link").addEventListener("click", () => removeCustomLink(index));
+
+        container.appendChild(item);
+    });
+
+    updateCustomLinksHiddenInput();
+}
+
+function addOrUpdateCustomLink() {
+    const titleInput = document.getElementById("customLinkTitle");
+    const urlInput = document.getElementById("customLinkUrl");
+    if (!titleInput || !urlInput) return;
+
+    const title = titleInput.value.trim();
+    const url = urlInput.value.trim();
+
+    if (!title) {
+        alert("Title is required.");
+        return;
+    }
+
+    if (!url || !/^https?:\/\/.+/i.test(url)) {
+        alert("Please enter a valid URL starting with http:// or https://");
+        return;
+    }
+
+    if (editingCustomLinkIndex !== null) {
+        customLinks[editingCustomLinkIndex] = { title, url };
+        editingCustomLinkIndex = null;
+        document.getElementById("addCustomLinkBtn").textContent = "Add";
+    } else {
+        customLinks.push({ title, url });
+    }
+
+    titleInput.value = "";
+    urlInput.value = "";
+
+    renderCustomLinks();
+}
+
+function editCustomLink(index) {
+    const link = customLinks[index];
+    if (!link) return;
+
+    document.getElementById("customLinkTitle").value = link.title;
+    document.getElementById("customLinkUrl").value = link.url;
+    editingCustomLinkIndex = index;
+    document.getElementById("addCustomLinkBtn").textContent = "Update";
+}
+
+function removeCustomLink(index) {
+    customLinks.splice(index, 1);
+
+    if (editingCustomLinkIndex === index) {
+        editingCustomLinkIndex = null;
+        document.getElementById("customLinkTitle").value = "";
+        document.getElementById("customLinkUrl").value = "";
+        document.getElementById("addCustomLinkBtn").textContent = "Add";
+    } else if (editingCustomLinkIndex !== null && index < editingCustomLinkIndex) {
+        editingCustomLinkIndex -= 1;
+    }
+
+    renderCustomLinks();
 }
 
 async function generateReviewAspects() {

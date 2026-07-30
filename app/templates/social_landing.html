@@ -1,0 +1,56 @@
+{% extends "base.html" %}
+{% block title %}Connect With Us{% endblock %}
+
+{% block navbar %}
+<nav class="navbar navbar-minimal">
+    <span class="brand">Review<span>QR</span>-AI</span>
+</nav>
+{% endblock %}
+
+{% block content %}
+<section class="customer-landing social-landing" data-slug="{{ slug }}">
+    <div class="customer-card social-landing-card">
+        <img id="businessLogo" src="" alt="" class="business-logo hidden">
+        <h2 id="businessName">Loading...</h2>
+        <p id="serviceType" class="muted"></p>
+
+        <div id="qrDisabledState" class="qr-disabled-state hidden">
+            <div class="qr-disabled-icon">🚫</div>
+            <h3>This QR Code is Currently Disabled</h3>
+            <p class="muted">Please contact the business owner or try again later.</p>
+        </div>
+
+        <div id="socialInteractive">
+            <p class="customer-instructions hidden">
+                Tap an option below to connect with us.
+            </p>
+
+            <div id="socialLoading" class="loading-indicator hidden">
+                <div class="spinner"></div>
+            </div>
+
+            <div id="socialEmptyState" class="hidden">
+                <p class="muted">No social media links are available yet.</p>
+            </div>
+
+            <div id="socialLinksContainer" class="social-links-container hidden"></div>
+        </div>
+
+        <div id="customerError" class="form-error hidden"></div>
+
+        <footer class="movya-footer">
+            <p>
+                Powered by
+                <a href="https://www.movya.com" target="_blank" rel="noopener noreferrer">
+                    Movya
+                </a>
+            </p>
+        </footer>
+    </div>
+
+</section>
+{% endblock %}
+
+{% block extra_scripts %}
+<script src="/static/js/social.js?v={{ asset_version }}"></script>
+{% endblock %}

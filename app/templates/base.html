@@ -21,11 +21,7 @@
         {% block content %}{% endblock %}
     </main>
 
-    <footer class="footer">
-        <p>&copy; 2026 ReviewQR-AI. Collect more reviews, effortlessly.</p>
-    </footer>
-
-    <script src="/static/js/app.js"></script>
+    <script src="/static/js/app.js?v={{ asset_version }}"></script>
     {% block extra_scripts %}{% endblock %}
 </body>
 </html>
