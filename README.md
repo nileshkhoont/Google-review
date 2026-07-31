@@ -129,7 +129,7 @@ reviewqr-ai/
    uvicorn app.main:app --reload
    ```
 
-6. Open `http://localhost:8000` in your browser.
+6. Open `https://aireview.movya.com` in your browser.
 
 ## Application Flow
 
