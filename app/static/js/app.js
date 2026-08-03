@@ -108,6 +108,65 @@ const API = {
     },
 };
 
+/**
+ * Fire-and-forget activity tracking for public customer pages. Never lets a
+ * tracking failure surface to the customer or interrupt their flow.
+ */
+function trackClick(endpoint, action) {
+    API.post(endpoint, { action }).catch(() => {});
+}
+
+const ACTION_LABELS = {
+    qr_scan: "QR Code Scan",
+    generate_review: "Generate Review",
+    copy_review: "Copy Review",
+    previous_review: "Previous Review",
+    next_review: "Next Review",
+    open_google_review: "Open Google Review",
+};
+
+/**
+ * Formats a UTC timestamp (as stored/returned by the API) for display in
+ * IST, regardless of the admin's own browser/OS timezone setting.
+ */
+function formatIST(dateString) {
+    const formatted = new Date(dateString).toLocaleString("en-IN", {
+        timeZone: "Asia/Kolkata",
+        day: "2-digit",
+        month: "short",
+        year: "numeric",
+        hour: "2-digit",
+        minute: "2-digit",
+        hour12: true,
+    });
+    return `${formatted} IST`;
+}
+
+/** Turns a raw click-log action string into an admin-friendly label. */
+function formatActionLabel(action) {
+    if (ACTION_LABELS[action]) return ACTION_LABELS[action];
+    if (action.startsWith("language_switch_")) {
+        return `Switch Language (${action.replace("language_switch_", "").toUpperCase()})`;
+    }
+    if (action.startsWith("social_link_")) {
+        const key = action.replace("social_link_", "");
+        return `Social Link: ${key === "other" ? "Custom" : key.charAt(0).toUpperCase() + key.slice(1)}`;
+    }
+    return action.replace(/_/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
+}
+
+/**
+ * Like formatActionLabel, but disambiguates "qr_scan" by which QR code it
+ * came from — the only action name shared by both the review and social
+ * landing pages, so it needs the page to read unambiguously.
+ */
+function formatActionRowLabel(action, page) {
+    if (action === "qr_scan") {
+        return `QR Code Scan (${page === "social" ? "Social Page" : "Review Page"})`;
+    }
+    return formatActionLabel(action);
+}
+
 async function getCurrentUser() {
     try {
         return await API.get("/api/auth/me");
@@ -124,6 +183,7 @@ function renderNavbar(user) {
         navLinks.innerHTML = `
             <a href="/dashboard">Dashboard</a>
             <a href="/businesses">Businesses</a>
+            <a href="/logs">Logs</a>
             <button id="logoutBtn">Logout</button>
         `;
         const logoutBtn = document.getElementById("logoutBtn");

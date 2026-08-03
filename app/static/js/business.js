@@ -241,6 +241,8 @@ async function initBusinessDetailsPage() {
             window.location.href = `/api/qr/${businessId}/social/download`;
         });
 
+        await loadBusinessActivity(businessId);
+
         document.getElementById("deleteBusinessBtn").addEventListener("click", async () => {
             if (!confirm(`Delete "${biz.business_name}"? This cannot be undone.`)) return;
             try {
@@ -252,6 +254,62 @@ async function initBusinessDetailsPage() {
         });
     } catch (err) {
         container.innerHTML = `<p class="form-error">${err.message}</p>`;
+    }
+}
+
+async function loadBusinessActivity(businessId) {
+    const breakdown = document.getElementById("activityBreakdown");
+    if (!breakdown) return;
+
+    try {
+        const actions = await API.get(`/api/business/${businessId}/click-logs/summary`);
+
+        // "qr_scan" is recorded on both the review and social landing pages,
+        // so there can be two separate rows for it here (one per page) —
+        // sum them for the headline stat, but keep them split in the
+        // breakdown list below via formatActionRowLabel().
+        const scanRows = actions.filter((a) => a.action === "qr_scan");
+        const buttonActions = actions.filter((a) => a.action !== "qr_scan");
+
+        document.getElementById("activityTotalScans").textContent =
+            scanRows.reduce((sum, a) => sum + a.count, 0);
+        document.getElementById("activityTotalClicks").textContent =
+            buttonActions.reduce((sum, a) => sum + a.count, 0);
+        document.getElementById("activityTopButton").textContent =
+            buttonActions.length > 0 ? formatActionLabel(buttonActions[0].action) : "—";
+
+        const lastSeen = actions.reduce(
+            (latest, a) => (!latest || a.last_clicked_at > latest ? a.last_clicked_at : latest),
+            null
+        );
+        document.getElementById("activityLastSeen").textContent = lastSeen
+            ? formatIST(lastSeen)
+            : "—";
+
+        if (actions.length === 0) {
+            breakdown.innerHTML = `<p class="muted">No activity recorded yet.</p>`;
+            return;
+        }
+
+        const maxCount = actions[0].count;
+        breakdown.innerHTML = actions
+            .map(
+                (a) => `
+            <div class="activity-row">
+                <div class="activity-row-label">
+                    <span>${escapeHtml(formatActionRowLabel(a.action, a.page))}</span>
+                    <span class="activity-row-count">${a.count}</span>
+                </div>
+                <div class="activity-bar-track">
+                    <div class="activity-bar-fill" style="width: ${(a.count / maxCount) * 100}%"></div>
+                </div>
+                <span class="activity-row-time muted">Last clicked ${formatIST(a.last_clicked_at)}</span>
+            </div>
+        `
+            )
+            .join("");
+    } catch (err) {
+        breakdown.innerHTML = `<p class="form-error">${err.message}</p>`;
     }
 }
 

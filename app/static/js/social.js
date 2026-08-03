@@ -107,14 +107,15 @@ document.addEventListener("DOMContentLoaded", async () => {
     }
 
     if (allLinks.length === 1) {
+        trackClick(`/api/customer/social/${slug}/track-click`, `social_link_${allLinks[0].key}`);
         window.location.replace(allLinks[0].url);
         return;
     }
 
     linksContainer.innerHTML = allLinks
         .map(
-            (platform) => `
-        <a class="social-link-btn social-link-btn--${platform.key}" href="${escapeHtml(platform.url)}" target="_blank" rel="noopener noreferrer">
+            (platform, index) => `
+        <a class="social-link-btn social-link-btn--${platform.key}" data-link-index="${index}" href="${escapeHtml(platform.url)}" target="_blank" rel="noopener noreferrer">
             <span class="social-link-icon">${platform.icon}</span>
             <span class="social-link-label">${escapeHtml(platform.label)}</span>
         </a>
@@ -122,4 +123,12 @@ document.addEventListener("DOMContentLoaded", async () => {
         )
         .join("");
     linksContainer.classList.remove("hidden");
+
+    // target="_blank" keeps this page alive, so the tracking fetch isn't cut short.
+    linksContainer.querySelectorAll("[data-link-index]").forEach((linkEl) => {
+        const platform = allLinks[Number(linkEl.dataset.linkIndex)];
+        linkEl.addEventListener("click", () => {
+            trackClick(`/api/customer/social/${slug}/track-click`, `social_link_${platform.key}`);
+        });
+    });
 });

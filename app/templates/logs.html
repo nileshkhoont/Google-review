@@ -1,0 +1,38 @@
+{% extends "base.html" %}
+{% block title %}Activity Logs — ReviewQR-AI{% endblock %}
+
+{% block content %}
+<section class="logs-page" data-requires-auth>
+    <a href="/dashboard" class="back-link"><span class="back-arrow">❮</span> Back</a>
+
+    <div class="dashboard-header">
+        <h2>Activity Logs</h2>
+    </div>
+
+    <div class="section-header">
+        <h3>By Company</h3>
+    </div>
+    <div id="companySummary" class="company-summary-list">
+        <p class="muted">Loading...</p>
+    </div>
+
+    <div class="section-header">
+        <h3>Recent Clicks</h3>
+        <select id="logsBusinessFilter" class="logs-filter-select">
+            <option value="">All companies</option>
+        </select>
+    </div>
+    <div id="logsTable" class="logs-table">
+        <p class="muted">Loading...</p>
+    </div>
+    <div class="logs-pagination">
+        <button id="logsPrevBtn" class="btn btn-secondary" disabled>Previous</button>
+        <span id="logsPageLabel" class="muted"></span>
+        <button id="logsNextBtn" class="btn btn-secondary" disabled>Next</button>
+    </div>
+</section>
+{% endblock %}
+
+{% block extra_scripts %}
+<script src="/static/js/logs.js?v={{ asset_version }}"></script>
+{% endblock %}

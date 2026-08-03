@@ -8,8 +8,11 @@ This keeps a clean separation between page delivery and data access.
 
 import time
 
-from fastapi import APIRouter, Request
+from fastapi import APIRouter, Depends, HTTPException, Request
 from fastapi.templating import Jinja2Templates
+
+from app.dependencies import get_click_log_service
+from app.services.click_log_service import ClickLogService
 
 router = APIRouter(tags=["Pages"])
 templates = Jinja2Templates(directory="app/templates")
@@ -53,6 +56,11 @@ async def business_details_page(request: Request, business_id: str):
     )
 
 
+@router.get("/logs")
+async def logs_page(request: Request):
+    return templates.TemplateResponse(request, "logs.html")
+
+
 @router.get("/businesses/{business_id}/edit")
 async def edit_business_page(request: Request, business_id: str):
     return templates.TemplateResponse(
@@ -61,16 +69,40 @@ async def edit_business_page(request: Request, business_id: str):
 
 
 @router.get("/r/{slug}")
-async def customer_landing_page(request: Request, slug: str):
+async def customer_landing_page(
+    request: Request,
+    slug: str,
+    click_log_service: ClickLogService = Depends(get_click_log_service),
+):
     """The page a customer lands on after scanning the review QR code."""
+    await _log_scan(click_log_service, slug, "review")
     return templates.TemplateResponse(
         request, "customer_landing.html", {"slug": slug}
     )
 
 
 @router.get("/s/{slug}")
-async def social_landing_page(request: Request, slug: str):
+async def social_landing_page(
+    request: Request,
+    slug: str,
+    click_log_service: ClickLogService = Depends(get_click_log_service),
+):
     """The page a customer lands on after scanning the social media QR code."""
+    await _log_scan(click_log_service, slug, "social")
     return templates.TemplateResponse(
         request, "social_landing.html", {"slug": slug}
     )
+
+
+async def _log_scan(click_log_service: ClickLogService, slug: str, page: str) -> None:
+    """
+    Records a QR scan the moment the landing page is actually opened —
+    this is the real "scan" event (unlike button clicks, tracked client-side,
+    which only fire if the page's JS loads and the business fetch succeeds).
+    Never blocks page rendering: an invalid/unknown slug just renders the
+    page's own not-found state client-side as before.
+    """
+    try:
+        await click_log_service.record_click(slug=slug, page=page, action="qr_scan")
+    except HTTPException:
+        pass

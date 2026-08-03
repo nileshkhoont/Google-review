@@ -2,9 +2,11 @@
 import json
 from fastapi import APIRouter, Depends, File, Form, UploadFile, status
 
-from app.dependencies import get_business_service, get_current_user_id
+from app.dependencies import get_business_service, get_click_log_service, get_current_user_id
 from app.schemas.business_schema import (BusinessResponse,BusinessUpdateRequest,ReviewAspectRequest,BusinessStatusUpdateRequest,)
+from app.schemas.click_log_schema import ActionCount
 from app.services.business_service import BusinessService
+from app.services.click_log_service import ClickLogService
 
 router = APIRouter(prefix="/api/business", tags=["Business"])
 
@@ -130,6 +132,16 @@ async def delete_business(
     business_service: BusinessService = Depends(get_business_service),
 ):
     await business_service.delete_business(user_id, business_id)
+
+@router.get("/{business_id}/click-logs/summary", response_model=list[ActionCount])
+async def get_business_click_summary(
+    business_id: str,
+    user_id: str = Depends(get_current_user_id),
+    click_log_service: ClickLogService = Depends(get_click_log_service),
+):
+    """Per-button click counts for this business, most-clicked first."""
+    return await click_log_service.get_business_summary(user_id, business_id)
+
 
 @router.post("/review-aspects")
 async def generate_review_aspects(

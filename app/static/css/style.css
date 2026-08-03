@@ -1328,6 +1328,172 @@ a {
     box-shadow: 0 10px 24px rgba(15, 23, 42, 0.12);
 }
 
+/* Activity panel (business details page) */
+.activity-card {
+    background: #fff;
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius);
+    padding: 1.5rem;
+    margin-bottom: 1.5rem;
+}
+
+.activity-stats-row {
+    display: flex;
+    gap: 1rem;
+    margin: 1.25rem 0;
+}
+
+.activity-stats-row .stat-card {
+    flex: 1;
+    padding: 1rem;
+}
+
+.activity-stats-row .stat-value {
+    font-size: 1.4rem;
+    word-break: break-word;
+}
+
+.activity-breakdown {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+}
+
+.activity-row {
+    padding: 0.75rem 0;
+    border-bottom: 1px solid var(--color-border);
+}
+
+.activity-row:last-child {
+    border-bottom: none;
+}
+
+.activity-row-label {
+    display: flex;
+    justify-content: space-between;
+    font-weight: 600;
+    margin-bottom: 0.4rem;
+}
+
+.activity-row-count {
+    color: var(--color-primary);
+}
+
+.activity-bar-track {
+    background: var(--color-secondary);
+    border-radius: 999px;
+    height: 8px;
+    overflow: hidden;
+}
+
+.activity-bar-fill {
+    background: var(--color-primary);
+    height: 100%;
+    border-radius: 999px;
+}
+
+.activity-row-time {
+    display: block;
+    font-size: 0.8rem;
+    margin-top: 0.35rem;
+}
+
+/* Logs page */
+.company-summary-list {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+    margin-bottom: 2rem;
+}
+
+.company-summary-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+    background: #fff;
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius);
+    padding: 0.85rem 1.25rem;
+    box-shadow: var(--shadow);
+    color: var(--color-text);
+}
+
+.company-summary-row:hover {
+    border-color: var(--color-primary);
+}
+
+.company-summary-name {
+    font-weight: 600;
+    flex: 1;
+}
+
+.company-summary-clicks {
+    color: var(--color-primary);
+    font-weight: 600;
+}
+
+.company-summary-time {
+    font-size: 0.85rem;
+}
+
+.logs-filter-select {
+    padding: 0.5rem 0.75rem;
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius);
+    background: #fff;
+    color: var(--color-text);
+}
+
+.logs-table {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+.log-row {
+    display: grid;
+    grid-template-columns: 180px 1fr 120px 1fr;
+    gap: 1rem;
+    align-items: center;
+    background: #fff;
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius);
+    padding: 0.65rem 1rem;
+    font-size: 0.9rem;
+}
+
+.log-row-time {
+    color: var(--color-muted);
+}
+
+.log-row-business {
+    font-weight: 600;
+    color: var(--color-text);
+}
+
+.log-row-page {
+    color: var(--color-muted);
+}
+
+.logs-pagination {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 1rem;
+    margin-top: 1.5rem;
+}
+
+@media (max-width: 720px) {
+    .activity-stats-row {
+        flex-direction: column;
+    }
+
+    .log-row {
+        grid-template-columns: 1fr;
+    }
+}
+
 .social-landing-card #businessName {
     font-weight: 800;
     letter-spacing: -0.01em;

@@ -11,10 +11,12 @@ from motor.motor_asyncio import AsyncIOMotorDatabase
 
 from app.database import get_db
 from app.repositories.business_repository import BusinessRepository
+from app.repositories.click_log_repository import ClickLogRepository
 from app.repositories.qr_repository import QRRepository
 from app.repositories.review_repository import ReviewRepository
 from app.services.auth_service import AuthService
 from app.services.business_service import BusinessService
+from app.services.click_log_service import ClickLogService
 from app.services.customer_service import CustomerService
 from app.services.qr_service import QRService
 from app.utils.jwt_utils import decode_access_token
@@ -86,3 +88,8 @@ def get_customer_service() -> CustomerService:
 
 def get_business_repository() -> BusinessRepository:
     return BusinessRepository(get_db())
+
+
+def get_click_log_service() -> ClickLogService:
+    db: AsyncIOMotorDatabase = get_db()
+    return ClickLogService(ClickLogRepository(db), BusinessRepository(db))

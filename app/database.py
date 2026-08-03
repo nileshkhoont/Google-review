@@ -18,7 +18,12 @@ class Database:
 
     @classmethod
     async def connect(cls) -> None:
-        cls.client = AsyncIOMotorClient(settings.mongo_uri)
+        # tz_aware=True: without it, Motor returns naive datetimes for every
+        # BSON date field (they're UTC internally but arrive with no tzinfo),
+        # which then serialize to JSON with no UTC offset — the browser then
+        # misreads them as local time instead of UTC, corrupting any
+        # timezone conversion (e.g. IST) done client-side.
+        cls.client = AsyncIOMotorClient(settings.mongo_uri, tz_aware=True)
         cls.db = cls.client[settings.mongo_db_name]
         await cls._ensure_indexes()
         logger.info("Connected to MongoDB database '%s'", settings.mongo_db_name)
@@ -67,6 +72,9 @@ class Database:
         )
 
         await cls.db["reviews"].create_index("business_id")
+
+        await cls.db["click_logs"].create_index([("business_id", 1), ("created_at", -1)])
+        await cls.db["click_logs"].create_index("created_at")
 
 
 def get_db() -> AsyncIOMotorDatabase:

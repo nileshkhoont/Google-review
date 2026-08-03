@@ -3,9 +3,10 @@
 No authentication required — these are opened directly by customers.
 """
 
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, status
 
-from app.dependencies import get_customer_service
+from app.dependencies import get_click_log_service, get_customer_service
+from app.schemas.click_log_schema import TrackClickRequest
 from app.schemas.review_schema import (
     CustomerBusinessResponse,
     GenerateReviewRequest,
@@ -13,6 +14,7 @@ from app.schemas.review_schema import (
     TranslateReviewRequest,
     TranslateReviewResponse,
 )
+from app.services.click_log_service import ClickLogService
 from app.services.customer_service import CustomerService
 
 router = APIRouter(prefix="/api/customer", tags=["Customer"])
@@ -89,3 +91,23 @@ async def translate_review(
         language=data.language,
     )
     return TranslateReviewResponse(translation=translation)
+
+
+@router.post("/{slug}/track-click", status_code=status.HTTP_204_NO_CONTENT)
+async def track_review_page_click(
+    slug: str,
+    data: TrackClickRequest,
+    click_log_service: ClickLogService = Depends(get_click_log_service),
+):
+    """Records a button click on the review landing page (/r/{slug})."""
+    await click_log_service.record_click(slug=slug, page="review", action=data.action)
+
+
+@router.post("/social/{social_slug}/track-click", status_code=status.HTTP_204_NO_CONTENT)
+async def track_social_page_click(
+    social_slug: str,
+    data: TrackClickRequest,
+    click_log_service: ClickLogService = Depends(get_click_log_service),
+):
+    """Records a button click on the social-links landing page (/s/{slug})."""
+    await click_log_service.record_click(slug=social_slug, page="social", action=data.action)

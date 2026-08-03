@@ -353,8 +353,13 @@ document.addEventListener("DOMContentLoaded", async () => {
         }
     }
 
-    regenerateBtn.addEventListener("click", generateReview);
+    regenerateBtn.addEventListener("click", () => {
+        trackClick(`/api/customer/${slug}/track-click`, "generate_review");
+        generateReview();
+    });
 
+    // Initial load auto-generates a review — not a customer click, so it
+    // bypasses the listener above and isn't tracked.
     generateReview();
 
     previousReviewBtn.addEventListener("click", () => {
@@ -362,6 +367,8 @@ document.addEventListener("DOMContentLoaded", async () => {
         if (currentReviewIndex === 0) {
             return;
         }
+
+        trackClick(`/api/customer/${slug}/track-click`, "previous_review");
 
         currentReviewIndex--;
 
@@ -375,6 +382,8 @@ document.addEventListener("DOMContentLoaded", async () => {
             return;
         }
 
+        trackClick(`/api/customer/${slug}/track-click`, "next_review");
+
         currentReviewIndex++;
 
         showCurrentReview();
@@ -385,6 +394,8 @@ document.addEventListener("DOMContentLoaded", async () => {
 
         button.addEventListener("click", () => {
 
+            trackClick(`/api/customer/${slug}/track-click`, `language_switch_${button.dataset.language}`);
+
             switchLanguage(button.dataset.language);
 
         });
@@ -392,6 +403,7 @@ document.addEventListener("DOMContentLoaded", async () => {
     });
 
     copyBtn.addEventListener("click", async () => {
+        trackClick(`/api/customer/${slug}/track-click`, "copy_review");
         await copyReview();
         copyBtn.textContent = "✅ Copied!";
         setTimeout(() => {
@@ -401,6 +413,7 @@ document.addEventListener("DOMContentLoaded", async () => {
 
     openGoogleBtn.addEventListener("click", async (e) => {
         e.preventDefault();
+        trackClick(`/api/customer/${slug}/track-click`, "open_google_review");
         await copyReview();
         window.open(openGoogleBtn.href, "_blank");
     });

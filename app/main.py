@@ -15,7 +15,7 @@ from fastapi.staticfiles import StaticFiles
 
 from app.config import settings
 from app.database import Database
-from app.routers import auth, business, customer, pages, qr
+from app.routers import auth, business, customer, logs, pages, qr
 from app.utils.logger import logger
 
 
@@ -79,6 +79,7 @@ app.include_router(auth.router)
 app.include_router(business.router)
 app.include_router(qr.router)
 app.include_router(customer.router)
+app.include_router(logs.router)
 
 # Server-rendered page routes
 app.include_router(pages.router)
