@@ -26,7 +26,7 @@ class Settings(BaseSettings):
     app_name: str = "ReviewQR-AI"
     app_env: str = "development"
     app_debug: bool = True
-    base_url: str = "https://aireview.movya.com"
+    base_url: str  # required — must be set in .env, no code-level fallback
 
     # MongoDB
     mongo_uri: str = "mongodb://localhost:27017"

@@ -51,7 +51,7 @@ function logRowHTML(entry) {
         <div class="log-row">
             <span class="log-row-time">${formatIST(entry.created_at)}</span>
             <a class="log-row-business" href="/businesses/${entry.business_id}">${escapeHtml(entry.business_name)}</a>
-            <span class="log-row-page">${entry.page === "social" ? "Social Page" : "Review Page"}</span>
+            <span class="log-row-page">${formatPageLabel(entry.page)}</span>
             <span class="log-row-action">${escapeHtml(formatActionLabel(entry.action))}</span>
         </div>
     `;

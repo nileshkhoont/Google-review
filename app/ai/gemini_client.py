@@ -180,11 +180,22 @@ class GeminiClient:
             api_key = self.api_keys[index]
 
             try:
+                # Only the (fast, synchronous) key switch needs to be
+                # serialized — holding the lock across the network call
+                # itself would mean the whole process can only have one
+                # Gemini request in flight at a time. This is safe because
+                # GenerativeModel binds its client to whatever key is
+                # globally configured on its *first* generate_content_async
+                # call, and that binding happens synchronously (no `await`)
+                # before the request is actually sent — so as long as we
+                # don't `await` anything else between releasing the lock and
+                # calling generate_content_async, no other coroutine can
+                # reconfigure the key in between.
                 async with _config_lock:
                     await _configure_key(api_key)
                     model = genai.GenerativeModel(self.model_name)
-                    response = await model.generate_content_async(prompt)
 
+                response = await model.generate_content_async(prompt)
                 return (response.text or "").strip()
 
             except Exception as exc:  # noqa: BLE001

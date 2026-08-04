@@ -2,7 +2,7 @@
 
 from typing import Any
 
-from app.utils.helper import new_id, slugify, slugify_social, utc_now
+from app.utils.helper import new_id, slugify, slugify_combined, slugify_social, utc_now
 
 
 def build_business_document(
@@ -29,6 +29,7 @@ def build_business_document(
         "business_name": business_name,
         "slug": slugify(business_name),
         "social_slug": slugify_social(business_name),
+        "combined_slug": slugify_combined(business_name),
         "service_type": service_type,
         "google_review_link": google_review_link,
         "business_description": business_description,

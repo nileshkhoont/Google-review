@@ -8,7 +8,7 @@ This keeps a clean separation between page delivery and data access.
 
 import time
 
-from fastapi import APIRouter, Depends, HTTPException, Request
+from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, Request
 from fastapi.templating import Jinja2Templates
 
 from app.dependencies import get_click_log_service
@@ -72,10 +72,11 @@ async def edit_business_page(request: Request, business_id: str):
 async def customer_landing_page(
     request: Request,
     slug: str,
+    background_tasks: BackgroundTasks,
     click_log_service: ClickLogService = Depends(get_click_log_service),
 ):
     """The page a customer lands on after scanning the review QR code."""
-    await _log_scan(click_log_service, slug, "review")
+    background_tasks.add_task(_log_scan, click_log_service, slug, "review")
     return templates.TemplateResponse(
         request, "customer_landing.html", {"slug": slug}
     )
@@ -85,12 +86,27 @@ async def customer_landing_page(
 async def social_landing_page(
     request: Request,
     slug: str,
+    background_tasks: BackgroundTasks,
     click_log_service: ClickLogService = Depends(get_click_log_service),
 ):
     """The page a customer lands on after scanning the social media QR code."""
-    await _log_scan(click_log_service, slug, "social")
+    background_tasks.add_task(_log_scan, click_log_service, slug, "social")
     return templates.TemplateResponse(
         request, "social_landing.html", {"slug": slug}
+    )
+
+
+@router.get("/c/{slug}")
+async def combined_landing_page(
+    request: Request,
+    slug: str,
+    background_tasks: BackgroundTasks,
+    click_log_service: ClickLogService = Depends(get_click_log_service),
+):
+    """The page a customer lands on after scanning the combined (review + social) QR code."""
+    background_tasks.add_task(_log_scan, click_log_service, slug, "combined")
+    return templates.TemplateResponse(
+        request, "combined_landing.html", {"slug": slug}
     )
 
 
@@ -99,8 +115,9 @@ async def _log_scan(click_log_service: ClickLogService, slug: str, page: str) ->
     Records a QR scan the moment the landing page is actually opened —
     this is the real "scan" event (unlike button clicks, tracked client-side,
     which only fire if the page's JS loads and the business fetch succeeds).
-    Never blocks page rendering: an invalid/unknown slug just renders the
-    page's own not-found state client-side as before.
+    Runs as a background task after the response is already sent, so an
+    invalid/unknown slug (or a slow DB write) never delays page rendering —
+    the page's own not-found state still renders client-side as before.
     """
     try:
         await click_log_service.record_click(slug=slug, page=page, action="qr_scan")

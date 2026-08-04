@@ -12,6 +12,27 @@ function resolveLogoUrl(logoPath) {
     return idx >= 0 ? `/static/${logoPath.slice(idx + marker.length)}` : null;
 }
 
+/**
+ * Prepends "https://" to a URL field if the user typed a bare domain
+ * (e.g. "instagram.com/biz" instead of "https://instagram.com/biz").
+ * Without this, <input type="url"> fails native browser validation on a
+ * missing scheme and silently blocks the whole form's submit — no error,
+ * no request sent, nothing visibly happens when Save is clicked.
+ */
+function normalizeUrlOnBlur(input) {
+    const value = input.value.trim();
+    if (value && !/^https?:\/\//i.test(value)) {
+        input.value = `https://${value}`;
+    }
+}
+
+/** Wires normalizeUrlOnBlur() to every url-type field in a form. */
+function wireUrlNormalization(form) {
+    form.querySelectorAll('input[type="url"]').forEach((input) => {
+        input.addEventListener("blur", () => normalizeUrlOnBlur(input));
+    });
+}
+
 function businessListRowHTML(biz) {
     const logo = resolveLogoUrl(biz.logo_path);
     const isActive = biz.is_active !== false;
@@ -96,6 +117,8 @@ async function initCreateBusinessPage() {
     const form = document.getElementById("createBusinessForm");
     if (!form) return;
 
+    wireUrlNormalization(form);
+
     const backLink = document.getElementById("backLink");
     if (backLink) backLink.href = resolveBackHref();
 
@@ -158,26 +181,42 @@ async function initBusinessDetailsPage() {
         document.getElementById("editBusinessBtn").href = withFrom(`/businesses/${businessId}/edit`, currentFrom);
         document.getElementById("openCustomerPageBtn").href = `/r/${biz.slug}`;
         document.getElementById("openSocialPageBtn").href = `/s/${biz.social_slug}`;
+        document.getElementById("openCombinedPageBtn").href = `/c/${biz.combined_slug}`;
 
-        // Load QR
-        try {
-            const qr = await API.get(`/api/qr/${businessId}`);
-            const qrImg = document.getElementById("qrImage");
-            qrImg.src = `/api/qr/${businessId}/download?t=${Date.now()}`;
-            qrImg.classList.remove("hidden");
-        } catch (_) {
-            // No QR yet — shouldn't normally happen since it's auto-generated.
-        }
-
-        // Load social QR
-        try {
-            await API.get(`/api/qr/${businessId}/social`);
-            const socialQrImg = document.getElementById("socialQrImage");
-            socialQrImg.src = `/api/qr/${businessId}/social/download?t=${Date.now()}`;
-            socialQrImg.classList.remove("hidden");
-        } catch (_) {
-            // No social QR yet — shouldn't normally happen since it's auto-generated.
-        }
+        // QR, social QR, and combined QR are independent lookups — run them
+        // concurrently instead of one after another.
+        await Promise.all([
+            (async () => {
+                try {
+                    await API.get(`/api/qr/${businessId}`);
+                    const qrImg = document.getElementById("qrImage");
+                    qrImg.src = `/api/qr/${businessId}/download?t=${Date.now()}`;
+                    qrImg.classList.remove("hidden");
+                } catch (_) {
+                    // No QR yet — shouldn't normally happen since it's auto-generated.
+                }
+            })(),
+            (async () => {
+                try {
+                    await API.get(`/api/qr/${businessId}/social`);
+                    const socialQrImg = document.getElementById("socialQrImage");
+                    socialQrImg.src = `/api/qr/${businessId}/social/download?t=${Date.now()}`;
+                    socialQrImg.classList.remove("hidden");
+                } catch (_) {
+                    // No social QR yet — shouldn't normally happen since it's auto-generated.
+                }
+            })(),
+            (async () => {
+                try {
+                    await API.get(`/api/qr/${businessId}/combined`);
+                    const combinedQrImg = document.getElementById("combinedQrImage");
+                    combinedQrImg.src = `/api/qr/${businessId}/combined/download?t=${Date.now()}`;
+                    combinedQrImg.classList.remove("hidden");
+                } catch (_) {
+                    // No combined QR yet — shouldn't normally happen since it's auto-generated.
+                }
+            })(),
+        ]);
 
         // QR activation toggle
         const qrToggle = document.getElementById("qrActiveToggle");
@@ -233,6 +272,33 @@ async function initBusinessDetailsPage() {
             }
         });
 
+        // Combined QR activation toggle
+        const combinedQrToggle = document.getElementById("combinedQrActiveToggle");
+        const combinedQrStatusLabel = document.getElementById("combinedQrStatusLabel");
+        const combinedQrDisabledOverlay = document.getElementById("combinedQrDisabledOverlay");
+
+        function updateCombinedQrStatusUI(isActive) {
+            combinedQrToggle.checked = isActive;
+            combinedQrStatusLabel.textContent = isActive ? "Active" : "Disabled";
+            combinedQrDisabledOverlay.classList.toggle("hidden", isActive);
+        }
+
+        updateCombinedQrStatusUI(biz.combined_is_active !== false);
+
+        combinedQrToggle.addEventListener("change", async () => {
+            const newStatus = combinedQrToggle.checked;
+            combinedQrToggle.disabled = true;
+            try {
+                await API.patch(`/api/business/${businessId}/combined-status`, { is_active: newStatus });
+                updateCombinedQrStatusUI(newStatus);
+            } catch (err) {
+                updateCombinedQrStatusUI(!newStatus);
+                alert(err.message);
+            } finally {
+                combinedQrToggle.disabled = false;
+            }
+        });
+
         document.getElementById("downloadQrBtn").addEventListener("click", () => {
             window.location.href = `/api/qr/${businessId}/download`;
         });
@@ -241,7 +307,15 @@ async function initBusinessDetailsPage() {
             window.location.href = `/api/qr/${businessId}/social/download`;
         });
 
-        await loadBusinessActivity(businessId);
+        document.getElementById("downloadCombinedQrBtn").addEventListener("click", () => {
+            window.location.href = `/api/qr/${businessId}/combined/download`;
+        });
+
+        // Not awaited: the activity summary is its own aggregation query and
+        // shouldn't hold up attaching the listeners below (the delete
+        // button in particular) behind an extra round trip. It manages its
+        // own "Loading..." / error state in the DOM once it resolves.
+        loadBusinessActivity(businessId);
 
         document.getElementById("deleteBusinessBtn").addEventListener("click", async () => {
             if (!confirm(`Delete "${biz.business_name}"? This cannot be undone.`)) return;
@@ -316,6 +390,8 @@ async function loadBusinessActivity(businessId) {
 async function initEditBusinessPage() {
     const form = document.getElementById("editBusinessForm");
     if (!form) return;
+
+    wireUrlNormalization(form);
 
     const businessId = document.querySelector("[data-business-id]").dataset.businessId;
     const errorEl = document.getElementById("formError");
@@ -488,7 +564,10 @@ function addOrUpdateCustomLink() {
     if (!titleInput || !urlInput) return;
 
     const title = titleInput.value.trim();
-    const url = urlInput.value.trim();
+    let url = urlInput.value.trim();
+    if (url && !/^https?:\/\//i.test(url)) {
+        url = `https://${url}`;
+    }
 
     if (!title) {
         alert("Title is required.");

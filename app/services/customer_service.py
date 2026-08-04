@@ -50,14 +50,48 @@ class CustomerService:
             )
         return business
 
+    async def get_business_by_combined_slug(self, combined_slug: str) -> dict:
+        """Same as get_business_by_slug(), but looked up via the distinct
+        identifier encoded in the combined (review + social) QR code, and
+        gated by its own independent `combined_is_active` flag — disabling
+        the review or social QR must not affect the combined QR."""
+        business = await self.business_repo.get_by_combined_slug(combined_slug)
+        if not business:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Business not found.")
+        if not business.get("combined_is_active", True):
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="This QR code has been disabled by the business owner.",
+            )
+        return business
+
     async def generate_review(
-        self, 
-        slug: str,  
+        self,
+        slug: str,
         rating: int | None = None,
         selected_review_aspects: list[str] | None = None,
     ) -> dict:
         business = await self.get_business_by_slug(slug)
-        
+        return await self._generate_review_for_business(business, slug, rating, selected_review_aspects)
+
+    async def generate_review_combined(
+        self,
+        combined_slug: str,
+        rating: int | None = None,
+        selected_review_aspects: list[str] | None = None,
+    ) -> dict:
+        business = await self.get_business_by_combined_slug(combined_slug)
+        return await self._generate_review_for_business(
+            business, combined_slug, rating, selected_review_aspects
+        )
+
+    async def _generate_review_for_business(
+        self,
+        business: dict,
+        slug: str,
+        rating: int | None,
+        selected_review_aspects: list[str] | None,
+    ) -> dict:
         review_aspects = selected_review_aspects
         if not review_aspects: 
             available_aspects = business.get("review_aspects", [])
@@ -124,7 +158,18 @@ class CustomerService:
         variant into every language up front.
         """
         await self.get_business_by_slug(slug)  # 404/403 checks
+        return await self._translate_review_for_business(slug, text, language)
 
+    async def translate_review_combined(
+        self,
+        combined_slug: str,
+        text: str,
+        language: str,
+    ) -> str:
+        await self.get_business_by_combined_slug(combined_slug)  # 404/403 checks
+        return await self._translate_review_for_business(combined_slug, text, language)
+
+    async def _translate_review_for_business(self, slug: str, text: str, language: str) -> str:
         try:
             return await self.review_generator.translate_single_review(text, language)
         except Exception as exc:  # noqa: BLE001

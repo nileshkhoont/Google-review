@@ -124,6 +124,7 @@ class BusinessResponse(BaseModel):
     business_name: str
     slug: str
     social_slug: str
+    combined_slug: str
     service_type: str
     google_review_link: str
     business_description: str | None = None
@@ -131,6 +132,7 @@ class BusinessResponse(BaseModel):
     logo_path: str | None = None
     is_active: bool = True
     social_is_active: bool = True
+    combined_is_active: bool = True
     created_at: datetime
     updated_at: datetime
 

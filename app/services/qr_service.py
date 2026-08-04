@@ -22,6 +22,10 @@ class QRService:
     def _social_url(slug: str) -> str:
         return f"{settings.base_url}/s/{slug}"
 
+    @staticmethod
+    def _combined_url(slug: str) -> str:
+        return f"{settings.base_url}/c/{slug}"
+
     async def generate_qr_for_business(
         self,
         business_id: str,
@@ -69,6 +73,30 @@ class QRService:
         logger.info("Generated social QR for business %s", business_id)
         return serialize_doc(saved)
 
+    async def generate_combined_qr_for_business(
+        self,
+        business_id: str,
+        slug: str,
+        business_name: str,
+        logo_path: str | None = None,
+    ) -> dict:
+        target_url = self._combined_url(slug)
+        filename = f"{business_id}_combined.png"
+        file_path = generate_qr_image(
+            data_url=target_url,
+            filename=filename,
+            business_name=business_name,
+            logo_path=logo_path,
+            subtitle="Scan to Review & Connect",
+        )
+
+        qr_doc = build_qr_document(
+            business_id=business_id, file_path=file_path, target_url=target_url, qr_type="combined"
+        )
+        saved = await self.qr_repo.upsert_for_business(business_id, "combined", qr_doc)
+        logger.info("Generated combined QR for business %s", business_id)
+        return serialize_doc(saved)
+
     async def get_qr_for_business(self, business_id: str, qr_type: str = "review") -> dict:
         doc = await self.qr_repo.get_by_business_id(business_id, qr_type)
         if not doc:
@@ -76,7 +104,7 @@ class QRService:
         return serialize_doc(doc)
 
     async def delete_qr_for_business(self, business_id: str) -> None:
-        for qr_type in ("review", "social"):
+        for qr_type in ("review", "social", "combined"):
             existing = await self.qr_repo.get_by_business_id(business_id, qr_type)
             if existing:
                 delete_qr_image(existing.get("file_path"))

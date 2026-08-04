@@ -1,6 +1,7 @@
 """Business CRUD endpoints (owner-only, JWT protected)."""
 import json
-from fastapi import APIRouter, Depends, File, Form, UploadFile, status
+from fastapi import APIRouter, Depends, File, Form, HTTPException, UploadFile, status
+from pydantic import ValidationError
 
 from app.dependencies import get_business_service, get_click_log_service, get_current_user_id
 from app.schemas.business_schema import (BusinessResponse,BusinessUpdateRequest,ReviewAspectRequest,BusinessStatusUpdateRequest,)
@@ -9,6 +10,23 @@ from app.services.business_service import BusinessService
 from app.services.click_log_service import ClickLogService
 
 router = APIRouter(prefix="/api/business", tags=["Business"])
+
+
+def _validation_error_detail(exc: ValidationError) -> str:
+    """
+    Turn a Pydantic ValidationError into a single readable message.
+
+    BusinessCreateRequest/BusinessUpdateRequest are built manually here from
+    Form(...) fields rather than declared as endpoint parameters, so FastAPI
+    never gets a chance to turn their ValidationError into its usual 422 —
+    left alone it propagates as an unhandled exception (a bare 500). This
+    reproduces that same 422 behavior with a message naming the bad field(s).
+    """
+    parts = []
+    for error in exc.errors():
+        field = ".".join(str(loc) for loc in error["loc"])
+        parts.append(f"{field}: {error['msg']}")
+    return "; ".join(parts)
 
 
 @router.post("", response_model=BusinessResponse, status_code=status.HTTP_201_CREATED)
@@ -32,21 +50,24 @@ async def create_business(
 ):
     from app.schemas.business_schema import BusinessCreateRequest
 
-    data = BusinessCreateRequest(
-        business_name=business_name,
-        service_type=service_type,
-        google_review_link=google_review_link,
-        business_description=business_description,
-        review_aspects=json.loads(review_aspects) if review_aspects else [],
-        website=website,
-        instagram=instagram,
-        facebook=facebook,
-        whatsapp_channel=whatsapp_channel,
-        youtube=youtube,
-        linkedin=linkedin,
-        twitter_x=twitter_x,
-        custom_links=json.loads(custom_links) if custom_links else [],
-    )
+    try:
+        data = BusinessCreateRequest(
+            business_name=business_name,
+            service_type=service_type,
+            google_review_link=google_review_link,
+            business_description=business_description,
+            review_aspects=json.loads(review_aspects) if review_aspects else [],
+            website=website,
+            instagram=instagram,
+            facebook=facebook,
+            whatsapp_channel=whatsapp_channel,
+            youtube=youtube,
+            linkedin=linkedin,
+            twitter_x=twitter_x,
+            custom_links=json.loads(custom_links) if custom_links else [],
+        )
+    except ValidationError as exc:
+        raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail=_validation_error_detail(exc)) from exc
     return await business_service.create_business(user_id, data, logo)
 
 
@@ -87,21 +108,24 @@ async def update_business(
     user_id: str = Depends(get_current_user_id),
     business_service: BusinessService = Depends(get_business_service),
 ):
-    data = BusinessUpdateRequest(
-        business_name=business_name,
-        service_type=service_type,
-        google_review_link=google_review_link,
-        business_description=business_description,
-        review_aspects=json.loads(review_aspects) if review_aspects else None,
-        website=website,
-        instagram=instagram,
-        facebook=facebook,
-        whatsapp_channel=whatsapp_channel,
-        youtube=youtube,
-        linkedin=linkedin,
-        twitter_x=twitter_x,
-        custom_links=json.loads(custom_links) if custom_links is not None else None,
-    )
+    try:
+        data = BusinessUpdateRequest(
+            business_name=business_name,
+            service_type=service_type,
+            google_review_link=google_review_link,
+            business_description=business_description,
+            review_aspects=json.loads(review_aspects) if review_aspects else None,
+            website=website,
+            instagram=instagram,
+            facebook=facebook,
+            whatsapp_channel=whatsapp_channel,
+            youtube=youtube,
+            linkedin=linkedin,
+            twitter_x=twitter_x,
+            custom_links=json.loads(custom_links) if custom_links is not None else None,
+        )
+    except ValidationError as exc:
+        raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail=_validation_error_detail(exc)) from exc
     return await business_service.update_business(user_id, business_id, data, logo)
 
 
@@ -123,6 +147,16 @@ async def update_social_status(
     business_service: BusinessService = Depends(get_business_service),
 ):
     return await business_service.set_social_status(user_id, business_id, data.is_active)
+
+
+@router.patch("/{business_id}/combined-status", response_model=BusinessResponse)
+async def update_combined_status(
+    business_id: str,
+    data: BusinessStatusUpdateRequest,
+    user_id: str = Depends(get_current_user_id),
+    business_service: BusinessService = Depends(get_business_service),
+):
+    return await business_service.set_combined_status(user_id, business_id, data.is_active)
 
 
 @router.delete("/{business_id}", status_code=status.HTTP_204_NO_CONTENT)

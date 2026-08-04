@@ -162,9 +162,16 @@ function formatActionLabel(action) {
  */
 function formatActionRowLabel(action, page) {
     if (action === "qr_scan") {
-        return `QR Code Scan (${page === "social" ? "Social Page" : "Review Page"})`;
+        return `QR Code Scan (${formatPageLabel(page)})`;
     }
     return formatActionLabel(action);
+}
+
+/** Turns a click-log "page" value into an admin-friendly label. */
+function formatPageLabel(page) {
+    if (page === "social") return "Social Page";
+    if (page === "combined") return "Combined Page";
+    return "Review Page";
 }
 
 async function getCurrentUser() {

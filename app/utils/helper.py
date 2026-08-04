@@ -40,6 +40,20 @@ def slugify_social(text: str) -> str:
     return f"{text}-social-{uuid.uuid4().hex[:6]}"
 
 
+def slugify_combined(text: str) -> str:
+    """
+    Slug for a business's *combined* (review + social) QR code — distinct
+    from both slugify() and slugify_social() so all three QR codes encode
+    different, unguessable URLs, e.g. 'My Cafe!' -> 'my-cafe-combined-a1b2c3'.
+    """
+    text = text.strip().lower()
+    text = re.sub(r"[^a-z0-9]+", "-", text)
+    text = text.strip("-")
+    if not text:
+        text = uuid.uuid4().hex[:8]
+    return f"{text}-combined-{uuid.uuid4().hex[:6]}"
+
+
 def serialize_doc(doc: dict) -> dict:
     """
     Convert a raw MongoDB document into an API-safe dict:

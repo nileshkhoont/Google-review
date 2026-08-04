@@ -8,7 +8,13 @@ from app.config import settings
 from app.models.business import build_business_document
 from app.repositories.business_repository import BusinessRepository
 from app.repositories.qr_repository import QRRepository
-from app.schemas.business_schema import BusinessCreateRequest, BusinessUpdateRequest
+from app.schemas.business_schema import SOCIAL_LINK_FIELDS, BusinessCreateRequest, BusinessUpdateRequest
+
+# Fields the edit form always submits in full (never partial), where an
+# empty value means "the owner cleared this" and must overwrite whatever
+# was saved before — as opposed to business_name/service_type/etc., which
+# stay required and should never be nulled out.
+_CLEARABLE_UPDATE_FIELDS = {"business_description", *SOCIAL_LINK_FIELDS}
 from app.services.qr_service import QRService
 from app.ai.review_generator import ReviewGenerator
 from app.utils.helper import new_id, serialize_doc
@@ -78,6 +84,12 @@ class BusinessService:
             business_name=business_doc["business_name"],
             logo_path=business_doc.get("logo_path"),
         )
+        await self.qr_service.generate_combined_qr_for_business(
+            business_id=business_doc["_id"],
+            slug=business_doc["combined_slug"],
+            business_name=business_doc["business_name"],
+            logo_path=business_doc.get("logo_path"),
+        )
         logger.info("Created business '%s' for owner %s", data.business_name, owner_id)
 
         return serialize_doc(business_doc)
@@ -104,7 +116,11 @@ class BusinessService:
         doc = await self.business_repo.get_by_id(business_id)
         self._ensure_owned(doc, owner_id)
 
-        updates = {k: v for k, v in data.model_dump(exclude_unset=True).items() if v is not None}
+        updates = {
+            k: v
+            for k, v in data.model_dump(exclude_unset=True).items()
+            if v is not None or k in _CLEARABLE_UPDATE_FIELDS
+        }
 
         if logo is not None and logo.filename:
             updates["logo_path"] = await self._save_logo(business_id, logo)
@@ -134,6 +150,14 @@ class BusinessService:
 
         updated = await self.business_repo.update(business_id, {"social_is_active": is_active})
         logger.info("Business %s social_is_active set to %s by owner %s", business_id, is_active, owner_id)
+        return serialize_doc(updated)
+
+    async def set_combined_status(self, owner_id: str, business_id: str, is_active: bool) -> dict:
+        doc = await self.business_repo.get_by_id(business_id)
+        self._ensure_owned(doc, owner_id)
+
+        updated = await self.business_repo.update(business_id, {"combined_is_active": is_active})
+        logger.info("Business %s combined_is_active set to %s by owner %s", business_id, is_active, owner_id)
         return serialize_doc(updated)
 
     async def generate_review_aspects(self,service_type: str,business_description: str | None = None,) -> list[str]:

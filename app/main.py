@@ -49,10 +49,39 @@ async def _backfill_social_slugs() -> None:
         logger.info("Backfilled social_slug for business %s", biz["_id"])
 
 
+async def _backfill_combined_slugs() -> None:
+    """
+    Same as _backfill_social_slugs(), but for the combined (review + social)
+    QR code: businesses created before that feature existed have no
+    `combined_slug` and no "combined" QR document yet.
+    """
+    from app.repositories.qr_repository import QRRepository
+    from app.services.qr_service import QRService
+    from app.utils.helper import slugify_combined
+
+    db = Database.db
+    qr_service = QRService(QRRepository(db))
+
+    cursor = db["businesses"].find({"combined_slug": {"$exists": False}})
+    async for biz in cursor:
+        combined_slug = slugify_combined(biz["business_name"])
+        await db["businesses"].update_one(
+            {"_id": biz["_id"]}, {"$set": {"combined_slug": combined_slug}}
+        )
+        await qr_service.generate_combined_qr_for_business(
+            business_id=biz["_id"],
+            slug=combined_slug,
+            business_name=biz["business_name"],
+            logo_path=biz.get("logo_path"),
+        )
+        logger.info("Backfilled combined_slug for business %s", biz["_id"])
+
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     await Database.connect()
     await _backfill_social_slugs()
+    await _backfill_combined_slugs()
     yield
     await Database.disconnect()
 

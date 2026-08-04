@@ -14,11 +14,12 @@ class ClickLogService:
         self.business_repo = business_repo
 
     async def record_click(self, slug: str, page: str, action: str) -> None:
-        business = (
-            await self.business_repo.get_by_social_slug(slug)
-            if page == "social"
-            else await self.business_repo.get_by_slug(slug)
-        )
+        if page == "social":
+            business = await self.business_repo.get_by_social_slug(slug)
+        elif page == "combined":
+            business = await self.business_repo.get_by_combined_slug(slug)
+        else:
+            business = await self.business_repo.get_by_slug(slug)
         if not business:
             raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Business not found.")
 
