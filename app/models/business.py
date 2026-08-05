@@ -36,6 +36,10 @@ def build_business_document(
         "review_aspects": review_aspects or [],
         "logo_path": logo_path,
         "is_active": True,
+        # Always True for newly created businesses — they only ever get the
+        # combined QR. Absent (falsy via .get()) on businesses created
+        # before this field existed, which keep their 3-QR setup untouched.
+        "combined_only": True,
         "website": website,
         "instagram": instagram,
         "facebook": facebook,

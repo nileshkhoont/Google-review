@@ -71,19 +71,10 @@ class BusinessService:
                 business_doc["_id"], {"logo_path": logo_path}
             )
 
-        # Every new business automatically gets both QR codes (per project spec).
-        await self.qr_service.generate_qr_for_business(
-            business_id=business_doc["_id"],
-            slug=business_doc["slug"],
-            business_name=business_doc["business_name"],
-            logo_path=business_doc.get("logo_path"),
-        )
-        await self.qr_service.generate_social_qr_for_business(
-            business_id=business_doc["_id"],
-            slug=business_doc["social_slug"],
-            business_name=business_doc["business_name"],
-            logo_path=business_doc.get("logo_path"),
-        )
+        # New businesses only get the combined QR (review + social both
+        # live on /c/{slug} now, gated by is_active/social_is_active) —
+        # the separate review-only and social-only QR codes are legacy,
+        # kept only for businesses that already have them.
         await self.qr_service.generate_combined_qr_for_business(
             business_id=business_doc["_id"],
             slug=business_doc["combined_slug"],

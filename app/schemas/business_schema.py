@@ -133,6 +133,7 @@ class BusinessResponse(BaseModel):
     is_active: bool = True
     social_is_active: bool = True
     combined_is_active: bool = True
+    combined_only: bool = False
     created_at: datetime
     updated_at: datetime
 

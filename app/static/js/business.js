@@ -157,6 +157,35 @@ async function initCreateBusinessPage() {
     });
 }
 
+/**
+ * Wires an on/off toggle to a PATCH endpoint of the shape {is_active}.
+ * Shared by the review/social/combined QR toggles and the combined page's
+ * Review/Social sub-toggles — same behavior, different endpoint.
+ */
+function wireStatusToggle(toggleEl, statusLabelEl, initialActive, endpoint, disabledOverlayEl) {
+    function updateUI(isActive) {
+        toggleEl.checked = isActive;
+        statusLabelEl.textContent = isActive ? "Active" : "Disabled";
+        if (disabledOverlayEl) disabledOverlayEl.classList.toggle("hidden", isActive);
+    }
+
+    updateUI(initialActive);
+
+    toggleEl.addEventListener("change", async () => {
+        const newStatus = toggleEl.checked;
+        toggleEl.disabled = true;
+        try {
+            await API.patch(endpoint, { is_active: newStatus });
+            updateUI(newStatus);
+        } catch (err) {
+            updateUI(!newStatus);
+            alert(err.message);
+        } finally {
+            toggleEl.disabled = false;
+        }
+    });
+}
+
 async function initBusinessDetailsPage() {
     const container = document.getElementById("businessDetails");
     if (!container) return;
@@ -183,29 +212,14 @@ async function initBusinessDetailsPage() {
         document.getElementById("openSocialPageBtn").href = `/s/${biz.social_slug}`;
         document.getElementById("openCombinedPageBtn").href = `/c/${biz.combined_slug}`;
 
-        // QR, social QR, and combined QR are independent lookups — run them
-        // concurrently instead of one after another.
-        await Promise.all([
-            (async () => {
-                try {
-                    await API.get(`/api/qr/${businessId}`);
-                    const qrImg = document.getElementById("qrImage");
-                    qrImg.src = `/api/qr/${businessId}/download?t=${Date.now()}`;
-                    qrImg.classList.remove("hidden");
-                } catch (_) {
-                    // No QR yet — shouldn't normally happen since it's auto-generated.
-                }
-            })(),
-            (async () => {
-                try {
-                    await API.get(`/api/qr/${businessId}/social`);
-                    const socialQrImg = document.getElementById("socialQrImage");
-                    socialQrImg.src = `/api/qr/${businessId}/social/download?t=${Date.now()}`;
-                    socialQrImg.classList.remove("hidden");
-                } catch (_) {
-                    // No social QR yet — shouldn't normally happen since it's auto-generated.
-                }
-            })(),
+        // combined_only businesses (created after the single-QR change) never
+        // got a review-only or social-only QR generated, so those two cards
+        // have nothing to show — hide them and only fetch the combined QR.
+        const isCombinedOnly = !!biz.combined_only;
+        document.getElementById("reviewQrCard").classList.toggle("hidden", isCombinedOnly);
+        document.getElementById("socialQrCard").classList.toggle("hidden", isCombinedOnly);
+
+        const qrFetches = [
             (async () => {
                 try {
                     await API.get(`/api/qr/${businessId}/combined`);
@@ -216,88 +230,82 @@ async function initBusinessDetailsPage() {
                     // No combined QR yet — shouldn't normally happen since it's auto-generated.
                 }
             })(),
-        ]);
+        ];
 
-        // QR activation toggle
-        const qrToggle = document.getElementById("qrActiveToggle");
-        const qrStatusLabel = document.getElementById("qrStatusLabel");
-        const qrDisabledOverlay = document.getElementById("qrDisabledOverlay");
-
-        function updateQrStatusUI(isActive) {
-            qrToggle.checked = isActive;
-            qrStatusLabel.textContent = isActive ? "Active" : "Disabled";
-            qrDisabledOverlay.classList.toggle("hidden", isActive);
+        if (!isCombinedOnly) {
+            qrFetches.push(
+                (async () => {
+                    try {
+                        await API.get(`/api/qr/${businessId}`);
+                        const qrImg = document.getElementById("qrImage");
+                        qrImg.src = `/api/qr/${businessId}/download?t=${Date.now()}`;
+                        qrImg.classList.remove("hidden");
+                    } catch (_) {
+                        // No QR yet — shouldn't normally happen since it's auto-generated.
+                    }
+                })(),
+                (async () => {
+                    try {
+                        await API.get(`/api/qr/${businessId}/social`);
+                        const socialQrImg = document.getElementById("socialQrImage");
+                        socialQrImg.src = `/api/qr/${businessId}/social/download?t=${Date.now()}`;
+                        socialQrImg.classList.remove("hidden");
+                    } catch (_) {
+                        // No social QR yet — shouldn't normally happen since it's auto-generated.
+                    }
+                })(),
+            );
         }
 
-        updateQrStatusUI(biz.is_active !== false);
+        // QR, social QR, and combined QR are independent lookups — run them
+        // concurrently instead of one after another.
+        await Promise.all(qrFetches);
 
-        qrToggle.addEventListener("change", async () => {
-            const newStatus = qrToggle.checked;
-            qrToggle.disabled = true;
-            try {
-                await API.patch(`/api/business/${businessId}/status`, { is_active: newStatus });
-                updateQrStatusUI(newStatus);
-            } catch (err) {
-                updateQrStatusUI(!newStatus);
-                alert(err.message);
-            } finally {
-                qrToggle.disabled = false;
-            }
-        });
+        if (isCombinedOnly) {
+            // This business's only QR is the combined one — its two halves
+            // (review flow / social links) are toggled independently, reusing
+            // the same is_active / social_is_active fields and endpoints that
+            // legacy businesses use to gate their separate review-only and
+            // social-only pages.
+            document.getElementById("combinedSingleToggle").classList.add("hidden");
+            document.getElementById("combinedDualToggle").classList.remove("hidden");
+            document.getElementById("combinedQrDisabledOverlay").classList.add("hidden");
 
-        // Social QR activation toggle
-        const socialQrToggle = document.getElementById("socialQrActiveToggle");
-        const socialQrStatusLabel = document.getElementById("socialQrStatusLabel");
-        const socialQrDisabledOverlay = document.getElementById("socialQrDisabledOverlay");
-
-        function updateSocialQrStatusUI(isActive) {
-            socialQrToggle.checked = isActive;
-            socialQrStatusLabel.textContent = isActive ? "Active" : "Disabled";
-            socialQrDisabledOverlay.classList.toggle("hidden", isActive);
+            wireStatusToggle(
+                document.getElementById("combinedReviewToggle"),
+                document.getElementById("combinedReviewStatusLabel"),
+                biz.is_active !== false,
+                `/api/business/${businessId}/status`,
+            );
+            wireStatusToggle(
+                document.getElementById("combinedSocialToggle"),
+                document.getElementById("combinedSocialStatusLabel"),
+                biz.social_is_active !== false,
+                `/api/business/${businessId}/social-status`,
+            );
+        } else {
+            wireStatusToggle(
+                document.getElementById("qrActiveToggle"),
+                document.getElementById("qrStatusLabel"),
+                biz.is_active !== false,
+                `/api/business/${businessId}/status`,
+                document.getElementById("qrDisabledOverlay"),
+            );
+            wireStatusToggle(
+                document.getElementById("socialQrActiveToggle"),
+                document.getElementById("socialQrStatusLabel"),
+                biz.social_is_active !== false,
+                `/api/business/${businessId}/social-status`,
+                document.getElementById("socialQrDisabledOverlay"),
+            );
+            wireStatusToggle(
+                document.getElementById("combinedQrActiveToggle"),
+                document.getElementById("combinedQrStatusLabel"),
+                biz.combined_is_active !== false,
+                `/api/business/${businessId}/combined-status`,
+                document.getElementById("combinedQrDisabledOverlay"),
+            );
         }
-
-        updateSocialQrStatusUI(biz.social_is_active !== false);
-
-        socialQrToggle.addEventListener("change", async () => {
-            const newStatus = socialQrToggle.checked;
-            socialQrToggle.disabled = true;
-            try {
-                await API.patch(`/api/business/${businessId}/social-status`, { is_active: newStatus });
-                updateSocialQrStatusUI(newStatus);
-            } catch (err) {
-                updateSocialQrStatusUI(!newStatus);
-                alert(err.message);
-            } finally {
-                socialQrToggle.disabled = false;
-            }
-        });
-
-        // Combined QR activation toggle
-        const combinedQrToggle = document.getElementById("combinedQrActiveToggle");
-        const combinedQrStatusLabel = document.getElementById("combinedQrStatusLabel");
-        const combinedQrDisabledOverlay = document.getElementById("combinedQrDisabledOverlay");
-
-        function updateCombinedQrStatusUI(isActive) {
-            combinedQrToggle.checked = isActive;
-            combinedQrStatusLabel.textContent = isActive ? "Active" : "Disabled";
-            combinedQrDisabledOverlay.classList.toggle("hidden", isActive);
-        }
-
-        updateCombinedQrStatusUI(biz.combined_is_active !== false);
-
-        combinedQrToggle.addEventListener("change", async () => {
-            const newStatus = combinedQrToggle.checked;
-            combinedQrToggle.disabled = true;
-            try {
-                await API.patch(`/api/business/${businessId}/combined-status`, { is_active: newStatus });
-                updateCombinedQrStatusUI(newStatus);
-            } catch (err) {
-                updateCombinedQrStatusUI(!newStatus);
-                alert(err.message);
-            } finally {
-                combinedQrToggle.disabled = false;
-            }
-        });
 
         document.getElementById("downloadQrBtn").addEventListener("click", () => {
             window.location.href = `/api/qr/${businessId}/download`;

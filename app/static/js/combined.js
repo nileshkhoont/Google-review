@@ -107,7 +107,19 @@ document.addEventListener("DOMContentLoaded", async () => {
         return;
     }
 
-    renderCombinedSocialLinks(business);
+    // combined_only businesses have independent Review/Social toggles for
+    // this one page (see business_details.html); legacy businesses never
+    // set combined_only, so both sections always behave as before.
+    const reviewSectionEnabled = !business.combined_only || business.is_active;
+    const socialSectionEnabled = !business.combined_only || business.social_is_active;
+
+    if (!reviewSectionEnabled) {
+        document.getElementById("combinedReviewSection").classList.add("hidden");
+    }
+
+    if (socialSectionEnabled) {
+        renderCombinedSocialLinks(business);
+    }
 
     const regenerateBtn = document.getElementById("regenerateReviewBtn");
 
@@ -342,8 +354,12 @@ document.addEventListener("DOMContentLoaded", async () => {
     });
 
     // Initial load auto-generates a review — not a customer click, so it
-    // bypasses the listener above and isn't tracked.
-    generateReview();
+    // bypasses the listener above and isn't tracked. Skipped entirely when
+    // the review section is hidden, so a disabled Review toggle doesn't
+    // still burn an AI call for a section the customer will never see.
+    if (reviewSectionEnabled) {
+        generateReview();
+    }
 
     previousReviewBtn.addEventListener("click", () => {
         if (currentReviewIndex === 0) {

@@ -37,6 +37,14 @@ class CustomerBusinessResponse(BaseModel):
     google_review_link: str
     review_aspects: list[str] = Field(default_factory=list)
 
+    # Only meaningful on the combined (/c/{slug}) page: whether the review
+    # and social sections should render there at all. Legacy businesses
+    # (combined_only=False) ignore these — their combined page always
+    # shows both, same as before this flag existed.
+    combined_only: bool = False
+    is_active: bool = True
+    social_is_active: bool = True
+
     website: str | None = None
     instagram: str | None = None
     facebook: str | None = None

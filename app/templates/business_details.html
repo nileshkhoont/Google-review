@@ -9,7 +9,7 @@
         <p class="muted">Loading...</p>
     </div>
 
-    <div class="qr-card">
+    <div id="reviewQrCard" class="qr-card">
         <div class="qr-card-header">
             <h3>QR Code</h3>
             <label class="qr-status-toggle">
@@ -31,7 +31,7 @@
         </div>
     </div>
 
-    <div class="qr-card">
+    <div id="socialQrCard" class="qr-card">
         <div class="qr-card-header">
             <h3>Social Media QR Code</h3>
             <label class="qr-status-toggle">
@@ -56,12 +56,30 @@
     <div class="qr-card">
         <div class="qr-card-header">
             <h3>Combined QR Code (Review + Social)</h3>
-            <label class="qr-status-toggle">
+
+            <!-- Legacy businesses (3 separate QR codes): one toggle for the whole combined page. -->
+            <label id="combinedSingleToggle" class="qr-status-toggle">
                 <span class="qr-status-name">Combined QR</span>
                 <input type="checkbox" id="combinedQrActiveToggle" checked>
                 <span class="toggle-slider"></span>
                 <span id="combinedQrStatusLabel" class="qr-status-label">Active</span>
             </label>
+
+            <!-- combined_only businesses (this is their only QR): independent Review/Social toggles. -->
+            <div id="combinedDualToggle" class="qr-status-toggles hidden">
+                <label class="qr-status-toggle">
+                    <span class="qr-status-name">Review</span>
+                    <input type="checkbox" id="combinedReviewToggle" checked>
+                    <span class="toggle-slider"></span>
+                    <span id="combinedReviewStatusLabel" class="qr-status-label">Active</span>
+                </label>
+                <label class="qr-status-toggle">
+                    <span class="qr-status-name">Social</span>
+                    <input type="checkbox" id="combinedSocialToggle" checked>
+                    <span class="toggle-slider"></span>
+                    <span id="combinedSocialStatusLabel" class="qr-status-label">Active</span>
+                </label>
+            </div>
         </div>
         <div class="qr-image-wrapper">
             <img id="combinedQrImage" src="" alt="Combined QR Code" class="qr-image hidden">
