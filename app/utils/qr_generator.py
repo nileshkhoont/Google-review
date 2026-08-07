@@ -284,13 +284,13 @@ def generate_qr_image(
     LOGO_SIZE = 92
     QR_SIZE = 600
     ICON_DIAMETER = 84
-    CARD_HEIGHT = 1417
+    CARD_HEIGHT = 1414
 
     card = Image.new("RGB", (CARD_WIDTH, CARD_HEIGHT), "white")
     _draw_background_accents(card, CARD_WIDTH, CARD_HEIGHT, color)
     draw = ImageDraw.Draw(card)
 
-    current_y = 80
+    current_y = 67
 
     # ----------------------------
     # Header lockup: logo beside business name / service type — a compact
