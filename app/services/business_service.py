@@ -13,8 +13,14 @@ from app.schemas.business_schema import SOCIAL_LINK_FIELDS, BusinessCreateReques
 # Fields the edit form always submits in full (never partial), where an
 # empty value means "the owner cleared this" and must overwrite whatever
 # was saved before — as opposed to business_name/service_type/etc., which
-# stay required and should never be nulled out.
-_CLEARABLE_UPDATE_FIELDS = {"business_description", *SOCIAL_LINK_FIELDS}
+# stay required and should never be nulled out. Clearing qr_title/
+# primary_color is valid too — the QR generator falls back to the business
+# name / its own default color when either is None.
+_CLEARABLE_UPDATE_FIELDS = {"business_description", "qr_title", "primary_color", *SOCIAL_LINK_FIELDS}
+
+# Editing any of these changes what the QR poster actually looks like, so
+# the existing poster image(s) need to be redrawn to match.
+_POSTER_AFFECTING_FIELDS = {"business_name", "service_type", "qr_title", "primary_color"}
 from app.services.qr_service import QRService
 from app.ai.review_generator import ReviewGenerator
 from app.utils.helper import new_id, serialize_doc
@@ -62,6 +68,8 @@ class BusinessService:
             linkedin=data.linkedin,
             twitter_x=data.twitter_x,
             custom_links=[link.model_dump() for link in data.custom_links],
+            qr_title=data.qr_title,
+            primary_color=data.primary_color,
         )
         await self.business_repo.create(business_doc)
 
@@ -80,6 +88,9 @@ class BusinessService:
             slug=business_doc["combined_slug"],
             business_name=business_doc["business_name"],
             logo_path=business_doc.get("logo_path"),
+            qr_title=business_doc.get("qr_title"),
+            primary_color=business_doc.get("primary_color"),
+            service_type=business_doc.get("service_type"),
         )
         logger.info("Created business '%s' for owner %s", data.business_name, owner_id)
 
@@ -113,11 +124,35 @@ class BusinessService:
             if v is not None or k in _CLEARABLE_UPDATE_FIELDS
         }
 
-        if logo is not None and logo.filename:
+        logo_replaced = logo is not None and logo.filename
+        if logo_replaced:
             updates["logo_path"] = await self._save_logo(business_id, logo)
 
         updated = await self.business_repo.update(business_id, updates)
+
+        if logo_replaced or _POSTER_AFFECTING_FIELDS & updates.keys():
+            await self._regenerate_qr_posters(updated)
+
         return serialize_doc(updated)
+
+    async def _regenerate_qr_posters(self, business: dict) -> None:
+        """Redraws whichever QR poster(s) this business has, so a changed
+        business name / tagline / primary color / logo is reflected in the
+        already-downloaded-looking image next time it's downloaded."""
+        kwargs = {
+            "business_id": business["_id"],
+            "business_name": business["business_name"],
+            "logo_path": business.get("logo_path"),
+            "qr_title": business.get("qr_title"),
+            "primary_color": business.get("primary_color"),
+            "service_type": business.get("service_type"),
+        }
+        if business.get("combined_only"):
+            await self.qr_service.generate_combined_qr_for_business(slug=business["combined_slug"], **kwargs)
+        else:
+            await self.qr_service.generate_qr_for_business(slug=business["slug"], **kwargs)
+            await self.qr_service.generate_social_qr_for_business(slug=business["social_slug"], **kwargs)
+            await self.qr_service.generate_combined_qr_for_business(slug=business["combined_slug"], **kwargs)
 
     async def delete_business(self, owner_id: str, business_id: str) -> None:
         doc = await self.business_repo.get_by_id(business_id)

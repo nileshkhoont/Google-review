@@ -440,6 +440,72 @@ a {
     margin: 0.3rem 0 1rem;
 }
 
+/* QR poster branding — primary color picker */
+.color-picker-row {
+    display: flex;
+    align-items: center;
+    gap: 0.85rem;
+    margin-top: 0.4rem;
+    flex-wrap: wrap;
+}
+
+.color-picker-row input[type="color"] {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 44px;
+    height: 44px;
+    padding: 0;
+    border: 1.5px solid var(--color-border);
+    border-radius: 10px;
+    cursor: pointer;
+    background: none;
+    flex-shrink: 0;
+    overflow: hidden;
+}
+
+/* Chromium renders the actual swatch as separate internal pseudo-elements
+   that ignore the input's own border-radius — round those directly too,
+   so the swatch doesn't show square corners inside a rounded box. */
+.color-picker-row input[type="color"]::-webkit-color-swatch-wrapper {
+    padding: 0;
+}
+
+.color-picker-row input[type="color"]::-webkit-color-swatch {
+    border: none;
+    border-radius: 8px;
+}
+
+.color-picker-row input[type="color"]::-moz-color-swatch {
+    border: none;
+    border-radius: 8px;
+}
+
+.color-presets {
+    display: flex;
+    gap: 0.5rem;
+    flex-wrap: wrap;
+}
+
+.color-preset {
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    border: 2px solid transparent;
+    cursor: pointer;
+    padding: 0;
+    box-shadow: 0 0 0 1px rgba(15, 23, 42, 0.08);
+    transition: transform 0.1s ease, box-shadow 0.15s ease;
+}
+
+.color-preset:hover {
+    transform: scale(1.1);
+}
+
+.color-preset.active {
+    border-color: #fff;
+    box-shadow: 0 0 0 2px var(--color-text);
+}
+
 .social-links-group {
     display: grid;
     grid-template-columns: 1fr 1fr;

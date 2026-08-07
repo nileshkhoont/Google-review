@@ -44,6 +44,8 @@ async def create_business(
     linkedin: str | None = Form(default=None),
     twitter_x: str | None = Form(default=None),
     custom_links: str | None = Form(default=None),
+    qr_title: str | None = Form(default=None),
+    primary_color: str | None = Form(default=None),
     logo: UploadFile | None = File(default=None),
     user_id: str = Depends(get_current_user_id),
     business_service: BusinessService = Depends(get_business_service),
@@ -65,6 +67,8 @@ async def create_business(
             linkedin=linkedin,
             twitter_x=twitter_x,
             custom_links=json.loads(custom_links) if custom_links else [],
+            qr_title=qr_title,
+            primary_color=primary_color,
         )
     except ValidationError as exc:
         raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail=_validation_error_detail(exc)) from exc
@@ -104,6 +108,8 @@ async def update_business(
     linkedin: str | None = Form(default=None),
     twitter_x: str | None = Form(default=None),
     custom_links: str | None = Form(default=None),
+    qr_title: str | None = Form(default=None),
+    primary_color: str | None = Form(default=None),
     logo: UploadFile | None = File(default=None),
     user_id: str = Depends(get_current_user_id),
     business_service: BusinessService = Depends(get_business_service),
@@ -123,6 +129,8 @@ async def update_business(
             linkedin=linkedin,
             twitter_x=twitter_x,
             custom_links=json.loads(custom_links) if custom_links is not None else None,
+            qr_title=qr_title,
+            primary_color=primary_color,
         )
     except ValidationError as exc:
         raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail=_validation_error_detail(exc)) from exc

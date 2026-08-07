@@ -23,3 +23,13 @@ def is_valid_url(url: str) -> bool:
     if not url:
         return False
     return bool(_URL_PATTERN.match(url.strip()))
+
+
+_HEX_COLOR_PATTERN = re.compile(r"^#[0-9A-Fa-f]{6}$")
+
+
+def is_valid_hex_color(value: str) -> bool:
+    """Whether a value is a 6-digit hex color like '#4f46e5'."""
+    if not value:
+        return False
+    return bool(_HEX_COLOR_PATTERN.match(value.strip()))

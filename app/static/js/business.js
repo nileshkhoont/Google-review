@@ -33,6 +33,39 @@ function wireUrlNormalization(form) {
     });
 }
 
+// Matches DEFAULT_PRIMARY_COLOR in app/utils/qr_generator.py — shown as
+// the picker's starting value so what the owner sees here matches what a
+// business with no primary_color set actually renders as.
+const DEFAULT_PRIMARY_COLOR = "#4f46e5";
+const COLOR_PRESETS = ["#4f46e5", "#2563eb", "#16a34a", "#dc2626", "#f97316", "#0891b2", "#7c3aed", "#db2777"];
+
+/** Renders the preset swatches and keeps them in sync with the color input. */
+function initColorPicker(form) {
+    const colorInput = form.querySelector("#primaryColor");
+    const presetsContainer = form.querySelector("#colorPresets");
+    if (!colorInput || !presetsContainer) return;
+
+    function syncActivePreset() {
+        presetsContainer.querySelectorAll(".color-preset").forEach((btn) => {
+            btn.classList.toggle("active", btn.dataset.color.toLowerCase() === colorInput.value.toLowerCase());
+        });
+    }
+
+    presetsContainer.innerHTML = COLOR_PRESETS.map(
+        (color) => `<button type="button" class="color-preset" data-color="${color}" style="background:${color}" aria-label="Use ${color}"></button>`
+    ).join("");
+
+    presetsContainer.querySelectorAll(".color-preset").forEach((btn) => {
+        btn.addEventListener("click", () => {
+            colorInput.value = btn.dataset.color;
+            syncActivePreset();
+        });
+    });
+
+    colorInput.addEventListener("input", syncActivePreset);
+    syncActivePreset();
+}
+
 function businessListRowHTML(biz) {
     const logo = resolveLogoUrl(biz.logo_path);
     const isActive = biz.is_active !== false;
@@ -118,6 +151,7 @@ async function initCreateBusinessPage() {
     if (!form) return;
 
     wireUrlNormalization(form);
+    initColorPicker(form);
 
     const backLink = document.getElementById("backLink");
     if (backLink) backLink.href = resolveBackHref();
@@ -400,6 +434,7 @@ async function initEditBusinessPage() {
     if (!form) return;
 
     wireUrlNormalization(form);
+    initColorPicker(form);
 
     const businessId = document.querySelector("[data-business-id]").dataset.businessId;
     const errorEl = document.getElementById("formError");
@@ -440,6 +475,15 @@ async function initEditBusinessPage() {
             const input = form.querySelector(`[name="${field}"]`);
             if (input) input.value = biz[field] || "";
         });
+
+        const qrTitleInput = form.querySelector("#qrTitle");
+        if (qrTitleInput) qrTitleInput.value = biz.qr_title || "";
+
+        const colorInput = form.querySelector("#primaryColor");
+        if (colorInput) {
+            colorInput.value = biz.primary_color || DEFAULT_PRIMARY_COLOR;
+            colorInput.dispatchEvent(new Event("input"));
+        }
 
         reviewAspects = [...(biz.review_aspects || [])];
         renderReviewAspects();

@@ -4,7 +4,7 @@ from datetime import datetime
 
 from pydantic import BaseModel, Field, field_validator
 
-from app.utils.validators import is_valid_google_review_link, is_valid_url
+from app.utils.validators import is_valid_google_review_link, is_valid_hex_color, is_valid_url
 
 # Optional social links a business owner can attach; every field feeds the
 # second ("social media") QR code alongside the review QR code.
@@ -25,6 +25,15 @@ def _validate_social_link(value: str | None) -> str | None:
     if not is_valid_url(value):
         raise ValueError("Please provide a valid http(s) link.")
     return value.strip()
+
+
+def _validate_primary_color(value: str | None) -> str | None:
+    if value is None or value.strip() == "":
+        return None
+    value = value.strip()
+    if not is_valid_hex_color(value):
+        raise ValueError("Please provide a valid hex color, e.g. #4f46e5.")
+    return value
 
 
 class CustomLink(BaseModel):
@@ -66,6 +75,11 @@ class BusinessCreateRequest(BaseModel):
     twitter_x: str | None = None
     custom_links: list[CustomLink] = Field(default_factory=list)
 
+    # QR poster branding — both optional, both fall back to defaults at
+    # generation time (see app/utils/qr_generator.py).
+    qr_title: str | None = Field(default=None, max_length=150)
+    primary_color: str | None = None
+
     @field_validator("google_review_link")
     @classmethod
     def validate_review_link(cls, value: str) -> str:
@@ -77,6 +91,11 @@ class BusinessCreateRequest(BaseModel):
     @classmethod
     def validate_social_links(cls, value: str | None) -> str | None:
         return _validate_social_link(value)
+
+    @field_validator("primary_color")
+    @classmethod
+    def validate_primary_color(cls, value: str | None) -> str | None:
+        return _validate_primary_color(value)
 
 
 class BusinessUpdateRequest(BaseModel):
@@ -95,6 +114,9 @@ class BusinessUpdateRequest(BaseModel):
     twitter_x: str | None = None
     custom_links: list[CustomLink] | None = None
 
+    qr_title: str | None = Field(default=None, max_length=150)
+    primary_color: str | None = None
+
     @field_validator("google_review_link")
     @classmethod
     def validate_review_link(cls, value: str | None) -> str | None:
@@ -108,6 +130,11 @@ class BusinessUpdateRequest(BaseModel):
     @classmethod
     def validate_social_links(cls, value: str | None) -> str | None:
         return _validate_social_link(value)
+
+    @field_validator("primary_color")
+    @classmethod
+    def validate_primary_color(cls, value: str | None) -> str | None:
+        return _validate_primary_color(value)
 
 class ReviewAspectRequest(BaseModel):
     service_type: str
@@ -130,6 +157,8 @@ class BusinessResponse(BaseModel):
     business_description: str | None = None
     review_aspects: list[str] = Field(default_factory=list)
     logo_path: str | None = None
+    qr_title: str | None = None
+    primary_color: str | None = None
     is_active: bool = True
     social_is_active: bool = True
     combined_is_active: bool = True

@@ -21,6 +21,8 @@ def build_business_document(
     linkedin: str | None = None,
     twitter_x: str | None = None,
     custom_links: list[dict[str, str]] | None = None,
+    qr_title: str | None = None,
+    primary_color: str | None = None,
 ) -> dict[str, Any]:
     now = utc_now()
     return {
@@ -35,6 +37,12 @@ def build_business_document(
         "business_description": business_description,
         "review_aspects": review_aspects or [],
         "logo_path": logo_path,
+        # QR poster branding. Both fall back to sensible defaults at
+        # generation time (qr_title -> business_name, primary_color -> the
+        # generator's default brand color) when left unset, so these stay
+        # optional everywhere else.
+        "qr_title": qr_title,
+        "primary_color": primary_color,
         "is_active": True,
         # Always True for newly created businesses — they only ever get the
         # combined QR. Absent (falsy via .get()) on businesses created

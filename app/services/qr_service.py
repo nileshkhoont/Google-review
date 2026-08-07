@@ -32,6 +32,9 @@ class QRService:
         slug: str,
         business_name: str,
         logo_path: str | None = None,
+        qr_title: str | None = None,
+        primary_color: str | None = None,
+        service_type: str | None = None,
     ) -> dict:
         target_url = self._customer_url(slug)
         filename = f"{business_id}.png"
@@ -40,6 +43,9 @@ class QRService:
             filename=filename,
             business_name=business_name,
             logo_path=logo_path,
+            qr_title=qr_title,
+            primary_color=primary_color,
+            service_type=service_type,
         )
 
         qr_doc = build_qr_document(
@@ -55,6 +61,9 @@ class QRService:
         slug: str,
         business_name: str,
         logo_path: str | None = None,
+        qr_title: str | None = None,
+        primary_color: str | None = None,
+        service_type: str | None = None,
     ) -> dict:
         target_url = self._social_url(slug)
         filename = f"{business_id}_social.png"
@@ -64,6 +73,9 @@ class QRService:
             business_name=business_name,
             logo_path=logo_path,
             subtitle="Scan to Connect With Us",
+            qr_title=qr_title,
+            primary_color=primary_color,
+            service_type=service_type,
         )
 
         qr_doc = build_qr_document(
@@ -79,6 +91,9 @@ class QRService:
         slug: str,
         business_name: str,
         logo_path: str | None = None,
+        qr_title: str | None = None,
+        primary_color: str | None = None,
+        service_type: str | None = None,
     ) -> dict:
         target_url = self._combined_url(slug)
         filename = f"{business_id}_combined.png"
@@ -88,6 +103,9 @@ class QRService:
             business_name=business_name,
             logo_path=logo_path,
             subtitle="Scan to Review & Connect",
+            qr_title=qr_title,
+            primary_color=primary_color,
+            service_type=service_type,
         )
 
         qr_doc = build_qr_document(

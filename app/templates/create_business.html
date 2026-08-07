@@ -97,6 +97,26 @@
             </div>
             <input type="hidden" id="customLinks" name="custom_links">
 
+            <div class="form-group">
+                <label class="form-group-title">QR Poster Branding (Optional)</label>
+                <p class="form-help">
+                    Customize how your QR poster looks. Leave blank to use your business name and our default color.
+                </p>
+
+                <div class="field">
+                    <label for="qrTitle">Tagline</label>
+                    <input type="text" id="qrTitle" name="qr_title" placeholder="e.g. We'd love your feedback!" maxlength="150">
+                </div>
+
+                <div class="field">
+                    <label for="primaryColor">Primary Color</label>
+                    <div class="color-picker-row">
+                        <input type="color" id="primaryColor" name="primary_color" value="#4f46e5">
+                        <div id="colorPresets" class="color-presets"></div>
+                    </div>
+                </div>
+            </div>
+
             <label for="logo">Business Logo (optional)</label>
             <input type="file" id="logo" name="logo" accept="image/*">
 
