@@ -318,7 +318,7 @@ def generate_qr_image(
     LOGO_SIZE = 78  # 92 - 20%, + 5%
     QR_SIZE = 600
     ICON_DIAMETER = 84
-    CARD_HEIGHT = 1414 + 130 + 15 - 50 - 100 - 11  # extra room at top for the title band, trimmed at bottom
+    CARD_HEIGHT = 1414 + 130 + 15 - 50 - 100 - 11 + 21  # extra room at top for the title band, trimmed at bottom, +21 for the fixed-offset footer line gap
 
     card = Image.new("RGB", (CARD_WIDTH, CARD_HEIGHT), "white")
     _draw_background_accents(card, CARD_WIDTH, CARD_HEIGHT, color)
@@ -529,8 +529,15 @@ def generate_qr_image(
     )
     current_y += 40
 
-    footer_font = _font(32, bold=True)
-    current_y += _draw_centered_text_tracked(draw, CARD_WIDTH, current_y, "Powered by Movya", footer_font, "#9aa1b1", tracking=1) + 12
+    # Line spacing is a fixed pixel offset (font size + margin) rather than
+    # the measured glyph height, so the 30px gap can't shrink if a different
+    # environment (e.g. Linux deployment without arial.ttf) substitutes a
+    # fallback font with different metrics.
+    FOOTER_FONT_SIZE = 32
+    FOOTER_LINE_GAP = 30
+    footer_font = _font(FOOTER_FONT_SIZE, bold=True)
+    _draw_centered_text_tracked(draw, CARD_WIDTH, current_y, "Powered by Movya", footer_font, "#9aa1b1", tracking=1)
+    current_y += FOOTER_FONT_SIZE + FOOTER_LINE_GAP
     _draw_centered_text_tracked(draw, CARD_WIDTH, current_y, "www.movya.com", footer_font, "#9aa1b1", tracking=1)
 
     card = _rounded_corners(card, radius=32)
