@@ -318,10 +318,18 @@ def generate_qr_image(
     LOGO_SIZE = 78  # 92 - 20%, + 5%
     QR_SIZE = 600
     ICON_DIAMETER = 84
-    CARD_HEIGHT = 1414 + 130 + 15 - 50 - 100 - 11 + 21  # extra room at top for the title band, trimmed at bottom, +21 for the fixed-offset footer line gap
+    BOTTOM_PADDING = 33
 
-    card = Image.new("RGB", (CARD_WIDTH, CARD_HEIGHT), "white")
-    _draw_background_accents(card, CARD_WIDTH, CARD_HEIGHT, color)
+    # Content is drawn on a generously tall, fully transparent layer first —
+    # its real height depends on rendered text metrics, which vary by font
+    # (e.g. a Linux deployment without arial.ttf falls back to a different
+    # font than local Windows). Sizing the canvas to a hardcoded pixel
+    # constant tuned against one machine's font previously caused the
+    # footer to get clipped whenever another environment's metrics ran
+    # taller. The final canvas is cropped to the actual content height
+    # below, so this can't happen regardless of which font renders.
+    MAX_CONTENT_HEIGHT = 2200
+    card = Image.new("RGBA", (CARD_WIDTH, MAX_CONTENT_HEIGHT), (0, 0, 0, 0))
     draw = ImageDraw.Draw(card)
 
     current_y = 15 + 15
@@ -538,9 +546,20 @@ def generate_qr_image(
     footer_font = _font(FOOTER_FONT_SIZE, bold=True)
     _draw_centered_text_tracked(draw, CARD_WIDTH, current_y, "Powered by Movya", footer_font, "#9aa1b1", tracking=1)
     current_y += FOOTER_FONT_SIZE + FOOTER_LINE_GAP
-    _draw_centered_text_tracked(draw, CARD_WIDTH, current_y, "www.movya.com", footer_font, "#9aa1b1", tracking=1)
+    last_line_h = _draw_centered_text_tracked(draw, CARD_WIDTH, current_y, "www.movya.com", footer_font, "#9aa1b1", tracking=1)
 
-    card = _rounded_corners(card, radius=32)
+    # Crop the transparent content layer down to exactly what got drawn,
+    # then composite it onto a freshly sized white card with the color
+    # accents baked in at the right dimensions — this is what makes the
+    # card height (and the bottom margin) accurate in every environment.
+    final_height = current_y + last_line_h + BOTTOM_PADDING
+    card = card.crop((0, 0, CARD_WIDTH, final_height))
+
+    base = Image.new("RGB", (CARD_WIDTH, final_height), "white")
+    _draw_background_accents(base, CARD_WIDTH, final_height, color)
+    base.paste(card, (0, 0), card)
+
+    card = _rounded_corners(base, radius=32)
 
     file_path = os.path.join(settings.qr_code_dir, filename)
     card.save(file_path)
