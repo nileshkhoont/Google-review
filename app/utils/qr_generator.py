@@ -378,23 +378,17 @@ def generate_qr_image(
     current_y += title_h + 81
 
     # ----------------------------
-    # Header lockup: logo beside business name / service type — a compact
+    # Header lockup: logo beside business name, side by side — a compact
     # wordmark rather than a full-width banner, so the rest of the poster
-    # stays a clean white card.
+    # stays a clean white card. No category/service-type label here.
     # ----------------------------
 
     name_font = _fit_font(draw, business_name.strip(), 480, start_size=37, min_size=22, bold=True)
     name_w, name_h = _text_size(draw, business_name.strip(), name_font)
 
-    service_label = " ".join(service_type.strip().upper()) if service_type and service_type.strip() else ""
-    service_font = _font(16)
-    service_w, service_h = _text_size(draw, service_label, service_font) if service_label else (0, 0)
+    lockup_h = max(name_h, LOGO_SIZE if has_logo else 0)
 
-    text_block_w = max(name_w, service_w)
-    text_block_h = name_h + (10 + service_h if service_label else 0)
-    lockup_h = max(text_block_h, LOGO_SIZE if has_logo else 0)
-
-    lockup_w = (LOGO_SIZE + 22 if has_logo else 0) + text_block_w
+    lockup_w = (LOGO_SIZE + 22 if has_logo else 0) + name_w
     lockup_x = (CARD_WIDTH - lockup_w) // 2
 
     if has_logo:
@@ -410,18 +404,14 @@ def generate_qr_image(
         except Exception:
             has_logo = False
 
-    text_y = current_y + (lockup_h - text_block_h) // 2
+    text_y = current_y + (lockup_h - name_h) // 2
     if has_logo:
-        # Sitting beside a logo, the lines read as a wordmark — left-align them.
+        # Sitting beside a logo, the name reads as a wordmark — left-align it.
         text_x = lockup_x + LOGO_SIZE + 22
         draw.text((text_x, text_y), business_name.strip(), font=name_font, fill="#111827")
-        if service_label:
-            draw.text((text_x, text_y + name_h + 10), service_label, font=service_font, fill="#9aa1b1")
     else:
-        # No logo to sit beside — each line centers on its own instead.
+        # No logo to sit beside — center the name on its own.
         _draw_centered_text(draw, CARD_WIDTH, text_y, business_name.strip(), name_font, "#111827")
-        if service_label:
-            _draw_centered_text(draw, CARD_WIDTH, text_y + name_h + 10, service_label, service_font, "#9aa1b1")
 
     current_y += lockup_h + 30
 
