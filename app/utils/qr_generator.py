@@ -171,6 +171,40 @@ def _draw_centered_text_tracked(draw: ImageDraw.ImageDraw, card_width: int, y: i
     return max_height
 
 
+def _draw_gradient_text(
+    card: Image.Image,
+    draw: ImageDraw.ImageDraw,
+    x: int,
+    y: int,
+    text: str,
+    font: ImageFont.FreeTypeFont,
+    colors: tuple[str, ...],
+) -> tuple[int, int]:
+    """Draws `text` filled with a left-to-right gradient blended across
+    `colors`, by rendering the text as an alpha mask and pasting a
+    gradient-filled image through it. Returns (width, height)."""
+    bbox = draw.textbbox((0, 0), text, font=font)
+    w, h = bbox[2], bbox[3]
+
+    mask = Image.new("L", (w, h), 0)
+    ImageDraw.Draw(mask).text((0, 0), text, font=font, fill=255)
+
+    gradient = Image.new("RGB", (w, h))
+    gdraw = ImageDraw.Draw(gradient)
+    stops = [_hex_to_rgb(c) for c in colors]
+    segments = len(stops) - 1
+    for px in range(w):
+        t = px / max(w - 1, 1) * segments
+        seg = min(int(t), segments - 1)
+        local_t = t - seg
+        c0, c1 = stops[seg], stops[seg + 1]
+        color = tuple(int(c0[i] + (c1[i] - c0[i]) * local_t) for i in range(3))
+        gdraw.line([(px, 0), (px, h)], fill=color)
+
+    card.paste(gradient, (x, y), mask)
+    return bbox[2] - bbox[0], bbox[3] - bbox[1]
+
+
 def _rounded_corners(image: Image.Image, radius: int) -> Image.Image:
     """Returns `image` with its four corners cut to transparent."""
     image = image.convert("RGBA")
@@ -281,16 +315,45 @@ def generate_qr_image(
     # ----------------------------
 
     CARD_WIDTH = 800
-    LOGO_SIZE = 92
+    LOGO_SIZE = 78  # 92 - 20%, + 5%
     QR_SIZE = 600
     ICON_DIAMETER = 84
-    CARD_HEIGHT = 1414
+    CARD_HEIGHT = 1414 + 130 + 15 - 50 - 100 - 11  # extra room at top for the title band, trimmed at bottom
 
     card = Image.new("RGB", (CARD_WIDTH, CARD_HEIGHT), "white")
     _draw_background_accents(card, CARD_WIDTH, CARD_HEIGHT, color)
     draw = ImageDraw.Draw(card)
 
-    current_y = 67
+    current_y = 15 + 15
+
+    # ----------------------------
+    # Top title: fixed "Smart AI Review" masthead, independent of business
+    # branding. Each letter of "AI" gets its own red -> blue -> green ->
+    # yellow gradient across all 4 colors, to stand out against the
+    # surrounding black text.
+    # ----------------------------
+
+    TITLE_COLORS = ("#EA4335", "#4285F4", "#34A853", "#FBBC05")
+    LETTER_COLORS = {
+        "A": TITLE_COLORS,
+        "I": TITLE_COLORS,
+    }
+    title_font = _font(47, bold=True)
+    title_parts = ["SMART ", "A", "I", " REVIEW"]
+    part_sizes = [_text_size(draw, part, title_font) for part in title_parts]
+    title_w = sum(w for w, _ in part_sizes)
+    title_h = max(h for _, h in part_sizes)
+    title_x = (CARD_WIDTH - title_w) // 2
+
+    x = title_x
+    for part, (part_w, _) in zip(title_parts, part_sizes):
+        if part in LETTER_COLORS:
+            _draw_gradient_text(card, draw, x, current_y, part, title_font, LETTER_COLORS[part])
+        else:
+            draw.text((x, current_y), part, font=title_font, fill="#111827")
+        x += part_w
+
+    current_y += title_h + 45
 
     # ----------------------------
     # Header lockup: logo beside business name / service type — a compact
@@ -298,11 +361,11 @@ def generate_qr_image(
     # stays a clean white card.
     # ----------------------------
 
-    name_font = _fit_font(draw, business_name.strip(), 480, start_size=44, min_size=26, bold=True)
+    name_font = _fit_font(draw, business_name.strip(), 480, start_size=37, min_size=22, bold=True)
     name_w, name_h = _text_size(draw, business_name.strip(), name_font)
 
     service_label = " ".join(service_type.strip().upper()) if service_type and service_type.strip() else ""
-    service_font = _font(19)
+    service_font = _font(16)
     service_w, service_h = _text_size(draw, service_label, service_font) if service_label else (0, 0)
 
     text_block_w = max(name_w, service_w)
