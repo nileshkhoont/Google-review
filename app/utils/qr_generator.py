@@ -122,8 +122,15 @@ def _draw_background_accents(card: Image.Image, width: int, height: int, color: 
     card.paste(accents, (0, 0), accents)
 
 
-def _font(size: int, bold: bool = False) -> ImageFont.FreeTypeFont:
-    names = ("arialbd.ttf", "arial.ttf") if bold else ("arial.ttf",)
+def _font(size: int, bold: bool = False, italic: bool = False) -> ImageFont.FreeTypeFont:
+    if bold and italic:
+        names = ("arialbi.ttf", "arialbd.ttf", "arial.ttf")
+    elif italic:
+        names = ("ariali.ttf", "arial.ttf")
+    elif bold:
+        names = ("arialbd.ttf", "arial.ttf")
+    else:
+        names = ("arial.ttf",)
     for name in names:
         try:
             return ImageFont.truetype(name, size)
@@ -317,7 +324,7 @@ def generate_qr_image(
     CARD_WIDTH = 800
     LOGO_SIZE = 78  # 92 - 20%, + 5%
     QR_SIZE = 600
-    ICON_DIAMETER = 84
+    ICON_DIAMETER = 77  # 84 - 8%
     BOTTOM_PADDING = 33
 
     # Content is drawn on a generously tall, fully transparent layer first —
@@ -332,7 +339,7 @@ def generate_qr_image(
     card = Image.new("RGBA", (CARD_WIDTH, MAX_CONTENT_HEIGHT), (0, 0, 0, 0))
     draw = ImageDraw.Draw(card)
 
-    current_y = 15 + 15
+    current_y = 15 + 15 + 3
 
     # ----------------------------
     # Top title: fixed "Smart AI Review" masthead, independent of business
@@ -346,7 +353,14 @@ def generate_qr_image(
         "A": TITLE_COLORS,
         "I": TITLE_COLORS,
     }
-    title_font = _font(47, bold=True)
+    # A distinct display font for the masthead — cleaner and more modern
+    # than the plain Arial Bold used for body text — with a graceful
+    # fallback to the standard bold chain if Segoe UI isn't available
+    # (e.g. a Linux deployment without Windows fonts installed).
+    try:
+        title_font = ImageFont.truetype("segoeuib.ttf", 47)
+    except Exception:
+        title_font = _font(47, bold=True)
     title_parts = ["SMART ", "A", "I", " REVIEW"]
     part_sizes = [_text_size(draw, part, title_font) for part in title_parts]
     title_w = sum(w for w, _ in part_sizes)
@@ -361,7 +375,7 @@ def generate_qr_image(
             draw.text((x, current_y), part, font=title_font, fill="#111827")
         x += part_w
 
-    current_y += title_h + 45
+    current_y += title_h + 81
 
     # ----------------------------
     # Header lockup: logo beside business name / service type — a compact
@@ -409,7 +423,7 @@ def generate_qr_image(
         if service_label:
             _draw_centered_text(draw, CARD_WIDTH, text_y + name_h + 10, service_label, service_font, "#9aa1b1")
 
-    current_y += lockup_h + 35
+    current_y += lockup_h + 30
 
     # ----------------------------
     # Tagline — the poster's main colored heading. Skipped entirely when
@@ -419,7 +433,7 @@ def generate_qr_image(
     MAX_TEXT_WIDTH = CARD_WIDTH - 100
     if tagline:
         tagline_font = _fit_font(draw, tagline, MAX_TEXT_WIDTH, start_size=38, min_size=22, bold=True)
-        current_y += _draw_centered_text(draw, CARD_WIDTH, current_y, tagline, tagline_font, _darken(color, 0.15)) + 40
+        current_y += _draw_centered_text(draw, CARD_WIDTH, current_y, tagline, tagline_font, _darken(color, 0.15)) + 20
 
     # ----------------------------
     # Subtitle
@@ -482,11 +496,11 @@ def generate_qr_image(
     current_y += chip_h + 18
 
     thanks_font = _font(23)
-    current_y += _draw_centered_text(draw, CARD_WIDTH, current_y, "Thank you for trusting us!", thanks_font, _darken(color, 0.15)) + 40
+    current_y += _draw_centered_text(draw, CARD_WIDTH, current_y, "Thank you for trusting us!", thanks_font, _darken(color, 0.15)) + 15
 
     # ----------------------------
-    # Social Icons Row — grouped on a light rounded "shelf" with its own
-    # soft shadow, rather than floating directly on the white card.
+    # Social Icons Row — plain icons directly on the white card (no shelf
+    # background behind them).
     # ----------------------------
 
     icon_keys = ("google", "instagram", "facebook", "website", "twitter")
@@ -499,17 +513,11 @@ def generate_qr_image(
     }
     icon_label_font = _font(18)
 
-    SHELF_MARGIN = 28
     shelf_pad = 22
     label_line_h = _text_size(draw, "Ag", icon_label_font)[1]
     max_lines = max(len(lines) for lines in icon_labels.values())
     label_block_h = max_lines * (label_line_h + 5)
-    shelf_w = CARD_WIDTH - SHELF_MARGIN * 2
     shelf_h = ICON_DIAMETER + label_block_h + shelf_pad * 2
-
-    shelf_img = Image.new("RGBA", (shelf_w, shelf_h), (0, 0, 0, 0))
-    ImageDraw.Draw(shelf_img).rounded_rectangle((0, 0, shelf_w - 1, shelf_h - 1), radius=24, fill=(248, 249, 251, 255))
-    _paste_with_shadow(card, shelf_img, (SHELF_MARGIN, current_y), blur=14, offset=(0, 6), opacity=18)
 
     icons_top = current_y + shelf_pad
     slot_width = CARD_WIDTH // len(icon_keys)
@@ -523,7 +531,7 @@ def generate_qr_image(
             draw.text((slot_cx - line_w // 2, label_y), line, fill="#6b7280", font=icon_label_font)
             label_y += line_h + 5
 
-    current_y += shelf_h + 45
+    current_y += shelf_h + 10
 
     # ----------------------------
     # Footer
@@ -535,34 +543,57 @@ def generate_qr_image(
         fill=_lighten(color, 0.35),
         width=3,
     )
-    current_y += 40
+    current_y += 81
 
     # Line spacing is a fixed pixel offset (font size + margin) rather than
-    # the measured glyph height, so the 30px gap can't shrink if a different
+    # the measured glyph height, so the gap can't shrink if a different
     # environment (e.g. Linux deployment without arial.ttf) substitutes a
     # fallback font with different metrics.
     FOOTER_FONT_SIZE = 32
-    FOOTER_LINE_GAP = 30
-    footer_font = _font(FOOTER_FONT_SIZE, bold=True)
+    FOOTER_LINE_GAP = 6
+    footer_font = _font(FOOTER_FONT_SIZE, bold=True, italic=True)
     _draw_centered_text_tracked(draw, CARD_WIDTH, current_y, "Powered by Movya", footer_font, "#9aa1b1", tracking=1)
     current_y += FOOTER_FONT_SIZE + FOOTER_LINE_GAP
     last_line_h = _draw_centered_text_tracked(draw, CARD_WIDTH, current_y, "www.movya.com", footer_font, "#9aa1b1", tracking=1)
 
-    # Crop the transparent content layer down to exactly what got drawn,
-    # then composite it onto a freshly sized white card with the color
-    # accents baked in at the right dimensions — this is what makes the
-    # card height (and the bottom margin) accurate in every environment.
+    # Crop the transparent content layer down to exactly what got drawn.
     final_height = current_y + last_line_h + BOTTOM_PADDING
     card = card.crop((0, 0, CARD_WIDTH, final_height))
 
-    base = Image.new("RGB", (CARD_WIDTH, final_height), "white")
-    _draw_background_accents(base, CARD_WIDTH, final_height, color)
-    base.paste(card, (0, 0), card)
+    # Pad out to a 4:6 print ratio (never scale or crop the content itself,
+    # only add matching background on whichever axis is short) — content is
+    # taller relative to its width than 4:6, so this normally widens the
+    # canvas and centers the content with accented margins on both sides.
+    PRINT_RATIO = 4 / 6
+    if final_height * PRINT_RATIO >= CARD_WIDTH:
+        canvas_width = round(final_height * PRINT_RATIO)
+        canvas_height = final_height
+    else:
+        canvas_width = CARD_WIDTH
+        canvas_height = round(CARD_WIDTH / PRINT_RATIO)
+
+    # Composite the content onto a freshly sized white card with the color
+    # accents baked in at the right dimensions — this is what makes the
+    # card height (and the bottom margin) accurate in every environment,
+    # while still landing on an exact 4:6 aspect ratio.
+    base = Image.new("RGB", (canvas_width, canvas_height), "white")
+    _draw_background_accents(base, canvas_width, canvas_height, color)
+    paste_x = (canvas_width - CARD_WIDTH) // 2
+    paste_y = (canvas_height - final_height) // 2
+    base.paste(card, (paste_x, paste_y), card)
 
     card = _rounded_corners(base, radius=32)
 
+    # Resize to an exact 4x6 inch print size at 300 DPI (photo-lab quality)
+    # and embed that DPI in the saved file, so this is a true 4x6 inch
+    # print — not just a 4:6-proportioned image of whatever pixel size the
+    # content happened to need.
+    PRINT_DPI = 300
+    FINAL_SIZE_PX = (4 * PRINT_DPI, 6 * PRINT_DPI)
+    card = card.resize(FINAL_SIZE_PX, Image.LANCZOS)
+
     file_path = os.path.join(settings.qr_code_dir, filename)
-    card.save(file_path)
+    card.save(file_path, dpi=(PRINT_DPI, PRINT_DPI))
     return file_path
 
 
