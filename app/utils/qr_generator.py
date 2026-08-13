@@ -27,6 +27,25 @@ DEFAULT_PRIMARY_COLOR = "#4f46e5"
 # own logo (which appears separately, in the header lockup).
 MOVYA_LOGO_PATH = "app/logo/m.png"
 
+# Bundled font files, used instead of asking Pillow for an OS font by name
+# (e.g. "arial.ttf") — those only resolve on Windows, where the file happens
+# to live in C:\Windows\Fonts. A Linux deployment has no such file, so
+# ImageFont.truetype() would fail there and silently fall back to Pillow's
+# tiny bitmap default font, making every deployed poster render in a
+# different, uglier font than what's seen locally. Shipping the actual
+# font files in the repo guarantees identical rendering everywhere.
+# Arimo is metric-compatible with Arial (SIL OFL, see app/fonts/Arimo-OFL.txt);
+# Poppins Bold (app/fonts/Poppins-OFL.txt) stands in for Segoe UI Bold as the
+# masthead's distinct display face.
+FONTS_DIR = "app/fonts"
+_FONT_FILES = {
+    (False, False): "Arimo-Regular.ttf",
+    (True, False): "Arimo-Bold.ttf",
+    (False, True): "Arimo-Italic.ttf",
+    (True, True): "Arimo-BoldItalic.ttf",
+}
+TITLE_FONT_PATH = os.path.join(FONTS_DIR, "Poppins-Bold.ttf")
+
 # Real brand marks for the poster's social icon row, used in place of
 # drawn glyphs — a flat programmatic redraw reads noticeably off-brand
 # next to the actual platform icons.
@@ -123,20 +142,11 @@ def _draw_background_accents(card: Image.Image, width: int, height: int, color: 
 
 
 def _font(size: int, bold: bool = False, italic: bool = False) -> ImageFont.FreeTypeFont:
-    if bold and italic:
-        names = ("arialbi.ttf", "arialbd.ttf", "arial.ttf")
-    elif italic:
-        names = ("ariali.ttf", "arial.ttf")
-    elif bold:
-        names = ("arialbd.ttf", "arial.ttf")
-    else:
-        names = ("arial.ttf",)
-    for name in names:
-        try:
-            return ImageFont.truetype(name, size)
-        except Exception:
-            continue
-    return ImageFont.load_default()
+    path = os.path.join(FONTS_DIR, _FONT_FILES[(bold, italic)])
+    try:
+        return ImageFont.truetype(path, size)
+    except Exception:
+        return ImageFont.load_default()
 
 
 def _fit_font(draw: ImageDraw.ImageDraw, text: str, max_width: int, start_size: int, min_size: int, bold: bool = False) -> ImageFont.FreeTypeFont:
@@ -354,11 +364,10 @@ def generate_qr_image(
         "I": TITLE_COLORS,
     }
     # A distinct display font for the masthead — cleaner and more modern
-    # than the plain Arial Bold used for body text — with a graceful
-    # fallback to the standard bold chain if Segoe UI isn't available
-    # (e.g. a Linux deployment without Windows fonts installed).
+    # than the plain body-text bold — with a graceful fallback to the
+    # standard bold chain if the bundled file is ever missing.
     try:
-        title_font = ImageFont.truetype("segoeuib.ttf", 47)
+        title_font = ImageFont.truetype(TITLE_FONT_PATH, 47)
     except Exception:
         title_font = _font(47, bold=True)
     title_parts = ["SMART ", "A", "I", " REVIEW"]
@@ -550,11 +559,15 @@ def generate_qr_image(
     final_height = current_y + last_line_h + BOTTOM_PADDING
     card = card.crop((0, 0, CARD_WIDTH, final_height))
 
-    # Pad out to a 4:6 print ratio (never scale or crop the content itself,
-    # only add matching background on whichever axis is short) — content is
-    # taller relative to its width than 4:6, so this normally widens the
-    # canvas and centers the content with accented margins on both sides.
-    PRINT_RATIO = 4 / 6
+    # Pad out to an A6 print ratio — A4 split into 4 equal quadrants is
+    # exactly A6 (105mm x 148mm), so 4 of these tile onto one A4 sheet
+    # (never scale or crop the content itself, only add matching background
+    # on whichever axis is short) — content is taller relative to its width
+    # than A6, so this normally widens the canvas and centers the content
+    # with accented margins on both sides.
+    A6_WIDTH_MM = 105
+    A6_HEIGHT_MM = 148
+    PRINT_RATIO = A6_WIDTH_MM / A6_HEIGHT_MM
     if final_height * PRINT_RATIO >= CARD_WIDTH:
         canvas_width = round(final_height * PRINT_RATIO)
         canvas_height = final_height
@@ -565,7 +578,7 @@ def generate_qr_image(
     # Composite the content onto a freshly sized white card with the color
     # accents baked in at the right dimensions — this is what makes the
     # card height (and the bottom margin) accurate in every environment,
-    # while still landing on an exact 4:6 aspect ratio.
+    # while still landing on an exact A6 aspect ratio.
     base = Image.new("RGB", (canvas_width, canvas_height), "white")
     _draw_background_accents(base, canvas_width, canvas_height, color)
     paste_x = (canvas_width - CARD_WIDTH) // 2
@@ -574,12 +587,16 @@ def generate_qr_image(
 
     card = _rounded_corners(base, radius=32)
 
-    # Resize to an exact 4x6 inch print size at 300 DPI (photo-lab quality)
-    # and embed that DPI in the saved file, so this is a true 4x6 inch
-    # print — not just a 4:6-proportioned image of whatever pixel size the
-    # content happened to need.
+    # Resize to an exact A6 print size at 300 DPI (photo-lab quality) and
+    # embed that DPI in the saved file, so this is a true 105mm x 148mm
+    # print (a quarter of A4) — not just an A6-proportioned image of
+    # whatever pixel size the content happened to need.
     PRINT_DPI = 300
-    FINAL_SIZE_PX = (4 * PRINT_DPI, 6 * PRINT_DPI)
+    MM_PER_INCH = 25.4
+    FINAL_SIZE_PX = (
+        round(A6_WIDTH_MM / MM_PER_INCH * PRINT_DPI),
+        round(A6_HEIGHT_MM / MM_PER_INCH * PRINT_DPI),
+    )
     card = card.resize(FINAL_SIZE_PX, Image.LANCZOS)
 
     file_path = os.path.join(settings.qr_code_dir, filename)

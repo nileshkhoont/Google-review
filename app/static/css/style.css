@@ -45,8 +45,10 @@ a {
 /* Navbar */
 .navbar {
     display: flex;
+    flex-wrap: wrap;
     justify-content: space-between;
     align-items: center;
+    row-gap: 0.5rem;
     padding: 1rem 2rem;
     background: #fff;
     border-bottom: 1px solid var(--color-border);
@@ -71,6 +73,7 @@ a {
 
 .nav-links {
     display: flex;
+    flex-wrap: wrap;
     gap: 1rem;
     align-items: center;
 }
@@ -91,8 +94,12 @@ a {
     padding: 0.65rem 1.25rem;
     border-radius: var(--radius);
     border: none;
+    font-family: inherit;
     font-size: 0.95rem;
     font-weight: 600;
+    line-height: 1.5;
+    appearance: none;
+    -webkit-appearance: none;
     cursor: pointer;
     text-align: center;
     transition: transform 0.05s ease, background 0.15s ease;
@@ -560,6 +567,7 @@ a {
 
 .form-actions .btn {
     min-width: 130px;
+    margin-top: 0;
 }
 
 /* Dashboard */
@@ -784,9 +792,30 @@ a {
 @media (max-width: 640px) {
     /* Business List page — stack the row instead of squeezing everything
        into one horizontally-scrolling line. */
-    .business-list-page .dashboard-header {
+    .dashboard-header {
         flex-wrap: wrap;
         gap: 0.75rem;
+    }
+
+    .section-header {
+        flex-wrap: wrap;
+        row-gap: 0.5rem;
+    }
+
+    .logs-filter-select {
+        width: 100%;
+    }
+
+    /* Logs page — "By Company" row: name / clicks / last-activity time
+       packed on one line runs out of room on a phone and pushes the row
+       past the viewport, so let it wrap onto its own line(s). */
+    .company-summary-row {
+        flex-wrap: wrap;
+        row-gap: 0.35rem;
+    }
+
+    .company-summary-name {
+        flex: 1 1 100%;
     }
 
     .business-row {
@@ -817,6 +846,29 @@ a {
 
     .business-row-actions .btn {
         flex: 1 1 calc(50% - 0.5rem);
+        text-align: center;
+    }
+
+    /* Business details page — the QR card header (title + Active/Inactive
+       toggles) is too wide to fit on one line on a phone, so let it stack. */
+    .qr-card-header {
+        flex-wrap: wrap;
+    }
+
+    .qr-card-header .qr-status-toggles {
+        flex-wrap: wrap;
+        row-gap: 0.5rem;
+    }
+
+    .details-actions .btn {
+        flex: 1 1 calc(50% - 0.5rem);
+        text-align: center;
+    }
+
+    /* "Open Customer/Social/Combined Page" labels are too long for a
+       50/50 split on a phone (wraps to 3 lines) — stack full-width instead. */
+    .qr-actions .btn {
+        flex: 1 1 100%;
         text-align: center;
     }
 }

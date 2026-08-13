@@ -60,7 +60,7 @@ class Settings(BaseSettings):
 
     # Number of random business aspects used when
     # the customer has not selected any manually.
-    random_aspects_count: int = 2
+    random_aspects_count: int = 1
     
     
     # ---------------------------------------------------------
