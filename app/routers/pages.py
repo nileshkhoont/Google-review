@@ -8,14 +8,20 @@ This keeps a clean separation between page delivery and data access.
 
 import time
 
-from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, Request
+from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, Request, status
+from fastapi.responses import RedirectResponse
 from fastapi.templating import Jinja2Templates
 
-from app.dependencies import get_click_log_service
+from app.dependencies import get_click_log_service, get_optional_user_id
 from app.services.click_log_service import ClickLogService
 
 router = APIRouter(tags=["Pages"])
 templates = Jinja2Templates(directory="app/templates")
+
+
+def _redirect_to_login() -> RedirectResponse:
+    return RedirectResponse(url="/login", status_code=status.HTTP_302_FOUND)
+
 
 # Cache-busting token for static JS/CSS references (see base.html and each
 # template's extra_scripts block): fixed for the lifetime of the process, so
@@ -35,34 +41,50 @@ async def login_page(request: Request):
 
 
 @router.get("/dashboard")
-async def dashboard_page(request: Request):
+async def dashboard_page(request: Request, user_id: str | None = Depends(get_optional_user_id)):
+    if not user_id:
+        return _redirect_to_login()
     return templates.TemplateResponse(request, "dashboard.html")
 
 
 @router.get("/businesses")
-async def business_list_page(request: Request):
+async def business_list_page(request: Request, user_id: str | None = Depends(get_optional_user_id)):
+    if not user_id:
+        return _redirect_to_login()
     return templates.TemplateResponse(request, "business_list.html")
 
 
 @router.get("/businesses/create")
-async def create_business_page(request: Request):
+async def create_business_page(request: Request, user_id: str | None = Depends(get_optional_user_id)):
+    if not user_id:
+        return _redirect_to_login()
     return templates.TemplateResponse(request, "create_business.html")
 
 
 @router.get("/businesses/{business_id}")
-async def business_details_page(request: Request, business_id: str):
+async def business_details_page(
+    request: Request, business_id: str, user_id: str | None = Depends(get_optional_user_id)
+):
+    if not user_id:
+        return _redirect_to_login()
     return templates.TemplateResponse(
         request, "business_details.html", {"business_id": business_id}
     )
 
 
 @router.get("/logs")
-async def logs_page(request: Request):
+async def logs_page(request: Request, user_id: str | None = Depends(get_optional_user_id)):
+    if not user_id:
+        return _redirect_to_login()
     return templates.TemplateResponse(request, "logs.html")
 
 
 @router.get("/businesses/{business_id}/edit")
-async def edit_business_page(request: Request, business_id: str):
+async def edit_business_page(
+    request: Request, business_id: str, user_id: str | None = Depends(get_optional_user_id)
+):
+    if not user_id:
+        return _redirect_to_login()
     return templates.TemplateResponse(
         request, "edit_business.html", {"business_id": business_id}
     )

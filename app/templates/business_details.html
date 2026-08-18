@@ -97,6 +97,15 @@
         <div class="qr-card-header">
             <h3>Activity</h3>
         </div>
+        <div class="activity-date-controls">
+            <div id="activityDatePresets" class="date-preset-row"></div>
+            <div class="activity-date-filter">
+                <input type="date" id="activityStartDateFilter" class="logs-filter-select" aria-label="From date">
+                <span class="muted">to</span>
+                <input type="date" id="activityEndDateFilter" class="logs-filter-select" aria-label="To date">
+                <button id="activityDateClearBtn" class="btn btn-secondary hidden" type="button">All time</button>
+            </div>
+        </div>
         <div class="activity-stats-row">
             <div class="stat-card">
                 <span class="stat-value" id="activityTotalScans">0</span>
@@ -114,6 +123,10 @@
                 <span class="stat-value" id="activityLastSeen">—</span>
                 <span class="stat-label">Last Activity</span>
             </div>
+        </div>
+        <div class="activity-chart-row">
+            <div id="activityPieChart" class="activity-pie-chart"></div>
+            <div id="activityPieLegend" class="activity-pie-legend"></div>
         </div>
         <div id="activityBreakdown" class="activity-breakdown">
             <p class="muted">Loading...</p>

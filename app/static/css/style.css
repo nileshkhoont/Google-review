@@ -88,11 +88,15 @@ a {
 /* Buttons */
 .btn {
     display: inline-block;
+    -webkit-appearance: none;
+    appearance: none;
     padding: 0.65rem 1.25rem;
     border-radius: var(--radius);
     border: none;
+    font-family: inherit;
     font-size: 0.95rem;
     font-weight: 600;
+    line-height: 1.5;
     cursor: pointer;
     text-align: center;
     transition: transform 0.05s ease, background 0.15s ease;
@@ -560,6 +564,13 @@ a {
 
 .form-actions .btn {
     min-width: 130px;
+    /* .stacked-form button sets margin-top for a lone submit button that
+       follows stacked fields directly — not needed here, where the row
+       itself (.form-actions) already provides spacing via its own
+       margin/border. Without this override the submit button (but not the
+       Cancel link, which the button-only selector doesn't match) picks up
+       that extra margin and renders visibly taller than Cancel. */
+    margin-top: 0;
 }
 
 /* Dashboard */
@@ -1450,6 +1461,147 @@ a {
     margin-bottom: 1.5rem;
 }
 
+.activity-date-controls {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.75rem;
+    margin-top: 0.75rem;
+}
+
+.date-preset-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.4rem;
+}
+
+.date-preset-btn {
+    padding: 0.35rem 0.75rem;
+    border: 1px solid var(--color-border);
+    border-radius: 999px;
+    background: #fff;
+    color: var(--color-text);
+    font-size: 0.8rem;
+    font-weight: 600;
+    cursor: pointer;
+    white-space: nowrap;
+}
+
+.date-preset-btn:hover {
+    border-color: var(--color-primary);
+}
+
+.date-preset-btn.active {
+    background: var(--color-primary);
+    border-color: var(--color-primary);
+    color: #fff;
+}
+
+.activity-date-filter {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+/* Activity pie chart */
+.activity-chart-row {
+    display: flex;
+    align-items: center;
+    gap: 2rem;
+    margin: 1.5rem 0;
+}
+
+.activity-pie-chart {
+    position: relative;
+    flex: 0 0 200px;
+    width: 200px;
+}
+
+.pie-svg {
+    width: 100%;
+    height: auto;
+    display: block;
+    overflow: visible;
+}
+
+.pie-slice {
+    stroke: #fff;
+    stroke-width: 2;
+    stroke-linejoin: round;
+    cursor: pointer;
+    transition: opacity 0.15s ease;
+}
+
+.pie-slice:hover,
+.pie-slice:focus,
+.pie-slice.pie-slice-active {
+    opacity: 0.82;
+    outline: none;
+}
+
+.pie-tooltip {
+    position: absolute;
+    transform: translate(-50%, -115%);
+    background: #1f2937;
+    color: #fff;
+    padding: 0.4rem 0.65rem;
+    border-radius: 8px;
+    font-size: 0.8rem;
+    line-height: 1.3;
+    white-space: nowrap;
+    pointer-events: none;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.1rem;
+    z-index: 5;
+}
+
+.pie-tooltip-value {
+    font-weight: 700;
+    font-size: 0.95rem;
+}
+
+.pie-tooltip-label {
+    color: #d1d5db;
+}
+
+.activity-pie-legend {
+    flex: 1 1 auto;
+    display: flex;
+    flex-direction: column;
+    gap: 0.6rem;
+    min-width: 0;
+}
+
+.pie-legend-row {
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+    font-size: 0.88rem;
+}
+
+.pie-legend-swatch {
+    flex-shrink: 0;
+    width: 10px;
+    height: 10px;
+    border-radius: 3px;
+}
+
+.pie-legend-label {
+    flex: 1 1 auto;
+    min-width: 0;
+    overflow-wrap: anywhere;
+}
+
+.pie-legend-value {
+    flex-shrink: 0;
+    font-weight: 600;
+    white-space: nowrap;
+}
+
 .activity-stats-row {
     display: flex;
     gap: 1rem;
@@ -1604,6 +1756,101 @@ a {
 
     .log-row {
         grid-template-columns: 1fr;
+    }
+}
+
+/* Admin pages — dashboard, logs, business details */
+@media (max-width: 640px) {
+    .page-content:has(> .dashboard),
+    .page-content:has(> .logs-page),
+    .page-content:has(> .business-details-page) {
+        padding: 1rem;
+    }
+
+    /* Dashboard */
+    .dashboard .dashboard-header {
+        flex-direction: column;
+        align-items: stretch;
+        gap: 0.75rem;
+    }
+
+    .dashboard .dashboard-header .btn {
+        width: 100%;
+        text-align: center;
+    }
+
+    .section-header {
+        flex-wrap: wrap;
+        gap: 0.5rem;
+    }
+
+    /* Logs page */
+    .company-summary-row {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 0.3rem;
+    }
+
+    .logs-pagination {
+        flex-wrap: wrap;
+    }
+
+    /* Business details */
+    .business-details-page .qr-card,
+    .business-details-page .details-card,
+    .business-details-page .activity-card {
+        padding: 1rem;
+    }
+
+    .qr-card-header {
+        flex-wrap: wrap;
+        gap: 0.75rem;
+    }
+
+    .qr-status-toggles {
+        flex-wrap: wrap;
+    }
+
+    .activity-date-controls {
+        flex-direction: column;
+        align-items: stretch;
+    }
+
+    .activity-date-filter {
+        flex-wrap: wrap;
+        width: 100%;
+    }
+
+    .activity-date-filter input[type="date"] {
+        flex: 1 1 130px;
+    }
+
+    .activity-chart-row {
+        flex-direction: column;
+        gap: 1rem;
+    }
+
+    .activity-pie-chart {
+        flex: 0 0 auto;
+        width: 180px;
+    }
+
+    .activity-pie-legend {
+        width: 100%;
+    }
+}
+
+@media (max-width: 480px) {
+    .navbar {
+        flex-wrap: wrap;
+        row-gap: 0.5rem;
+    }
+
+    .nav-links {
+        width: 100%;
+        justify-content: center;
+        flex-wrap: wrap;
+        gap: 0.6rem 1rem;
     }
 }
 

@@ -178,11 +178,21 @@ async def delete_business(
 @router.get("/{business_id}/click-logs/summary", response_model=list[ActionCount])
 async def get_business_click_summary(
     business_id: str,
+    start_date: str | None = None,
+    end_date: str | None = None,
     user_id: str = Depends(get_current_user_id),
     click_log_service: ClickLogService = Depends(get_click_log_service),
 ):
-    """Per-button click counts for this business, most-clicked first."""
-    return await click_log_service.get_business_summary(user_id, business_id)
+    """
+    Per-button click counts for this business, most-clicked first.
+
+    `start_date`/`end_date` (optional, "YYYY-MM-DD", interpreted as IST
+    calendar days, inclusive) scope the counts to that date range instead
+    of all-time. Passing just one of the two scopes to that single day.
+    """
+    return await click_log_service.get_business_summary(
+        user_id, business_id, start_date=start_date, end_date=end_date
+    )
 
 
 @router.post("/review-aspects")

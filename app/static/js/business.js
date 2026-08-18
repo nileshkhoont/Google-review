@@ -359,6 +359,65 @@ async function initBusinessDetailsPage() {
         // own "Loading..." / error state in the DOM once it resolves.
         loadBusinessActivity(businessId);
 
+        const activityStartDateFilter = document.getElementById("activityStartDateFilter");
+        const activityEndDateFilter = document.getElementById("activityEndDateFilter");
+        const activityDateClearBtn = document.getElementById("activityDateClearBtn");
+        const activityDatePresets = document.getElementById("activityDatePresets");
+        const todayIST = new Date().toLocaleDateString("en-CA", { timeZone: "Asia/Kolkata" });
+        activityStartDateFilter.max = todayIST;
+        activityEndDateFilter.max = todayIST;
+
+        function syncActivityPresetHighlight() {
+            const start = activityStartDateFilter.value;
+            const end = activityEndDateFilter.value;
+            activityDatePresets.querySelectorAll(".date-preset-btn").forEach((btn) => {
+                const preset = ACTIVITY_DATE_PRESETS.find((p) => p.key === btn.dataset.presetKey);
+                const [presetStart, presetEnd] = preset.range(todayIST);
+                btn.classList.toggle("active", start === presetStart && end === presetEnd);
+            });
+        }
+
+        function applyActivityDateFilter() {
+            // Keep the range coherent: start can't be after end, in either
+            // direction of edit.
+            if (activityStartDateFilter.value && activityEndDateFilter.value) {
+                if (activityStartDateFilter.value > activityEndDateFilter.value) {
+                    activityEndDateFilter.value = activityStartDateFilter.value;
+                }
+            }
+            const hasFilter = activityStartDateFilter.value || activityEndDateFilter.value;
+            activityDateClearBtn.classList.toggle("hidden", !hasFilter);
+            syncActivityPresetHighlight();
+            loadBusinessActivity(businessId, activityStartDateFilter.value, activityEndDateFilter.value);
+        }
+
+        activityStartDateFilter.addEventListener("change", applyActivityDateFilter);
+        activityEndDateFilter.addEventListener("change", applyActivityDateFilter);
+
+        activityDateClearBtn.addEventListener("click", () => {
+            activityStartDateFilter.value = "";
+            activityEndDateFilter.value = "";
+            activityDateClearBtn.classList.add("hidden");
+            syncActivityPresetHighlight();
+            loadBusinessActivity(businessId);
+        });
+
+        activityDatePresets.innerHTML = ACTIVITY_DATE_PRESETS.map(
+            (preset) => `
+            <button type="button" class="date-preset-btn" data-preset-key="${preset.key}">${preset.label}</button>
+        `
+        ).join("");
+
+        activityDatePresets.querySelectorAll(".date-preset-btn").forEach((btn) => {
+            btn.addEventListener("click", () => {
+                const preset = ACTIVITY_DATE_PRESETS.find((p) => p.key === btn.dataset.presetKey);
+                const [start, end] = preset.range(todayIST);
+                activityStartDateFilter.value = start;
+                activityEndDateFilter.value = end;
+                applyActivityDateFilter();
+            });
+        });
+
         document.getElementById("deleteBusinessBtn").addEventListener("click", async () => {
             if (!confirm(`Delete "${biz.business_name}"? This cannot be undone.`)) return;
             try {
@@ -373,12 +432,201 @@ async function initBusinessDetailsPage() {
     }
 }
 
-async function loadBusinessActivity(businessId) {
+/**
+ * Shifts a "YYYY-MM-DD" calendar date by whole days and/or months. Uses
+ * Date.UTC as a pure calendar-math anchor (not a real moment) so this never
+ * drifts across the admin's local timezone or DST — only the Y/M/D fields
+ * matter here, never a time-of-day.
+ */
+function shiftISTDate(dateStr, { days = 0, months = 0 } = {}) {
+    const [y, m, d] = dateStr.split("-").map(Number);
+    const dt = new Date(Date.UTC(y, m - 1, d));
+    if (months) dt.setUTCMonth(dt.getUTCMonth() + months);
+    if (days) dt.setUTCDate(dt.getUTCDate() + days);
+    return dt.toISOString().slice(0, 10);
+}
+
+const ACTIVITY_DATE_PRESETS = [
+    { key: "yesterday", label: "Yesterday", range: (today) => {
+        const yesterday = shiftISTDate(today, { days: -1 });
+        return [yesterday, yesterday];
+    } },
+    { key: "last5", label: "Last 5 Days", range: (today) => [shiftISTDate(today, { days: -4 }), today] },
+    { key: "last10", label: "Last 10 Days", range: (today) => [shiftISTDate(today, { days: -9 }), today] },
+    { key: "lastMonth", label: "Last Month", range: (today) => [shiftISTDate(today, { months: -1 }), today] },
+    { key: "last3Months", label: "Last 3 Months", range: (today) => [shiftISTDate(today, { months: -3 }), today] },
+];
+
+// Fixed categorical order (never reassigned per-render) so a slice's color
+// stays tied to its rank, not its identity — acceptable here since the
+// legend is always shown alongside and carries the real identity mapping.
+const PIE_COLORS = ["#2a78d6", "#eb6834", "#1baf7a", "#eda100", "#e87ba4", "#008300", "#4a3aa7", "#e34948"];
+const PIE_OTHER_COLOR = "#9aa1b1";
+const PIE_MAX_SLICES = 7;
+
+function polarToCartesian(cx, cy, r, angleDeg) {
+    const rad = ((angleDeg - 90) * Math.PI) / 180;
+    return { x: cx + r * Math.cos(rad), y: cy + r * Math.sin(rad) };
+}
+
+/** SVG path for one pie wedge; a >=360° slice (only one category) draws as a full circle. */
+function describePieSlice(cx, cy, r, startAngle, endAngle) {
+    if (endAngle - startAngle >= 359.999) {
+        const p1 = polarToCartesian(cx, cy, r, 0);
+        const p2 = polarToCartesian(cx, cy, r, 180);
+        return `M ${p1.x} ${p1.y} A ${r} ${r} 0 1 1 ${p2.x} ${p2.y} A ${r} ${r} 0 1 1 ${p1.x} ${p1.y} Z`;
+    }
+    const start = polarToCartesian(cx, cy, r, endAngle);
+    const end = polarToCartesian(cx, cy, r, startAngle);
+    const largeArc = endAngle - startAngle > 180 ? 1 : 0;
+    return `M ${cx} ${cy} L ${start.x} ${start.y} A ${r} ${r} 0 ${largeArc} 0 ${end.x} ${end.y} Z`;
+}
+
+/**
+ * Collapses the (page, action) rows into pie slices, folding everything
+ * past the top 7 into "Other" — past that many slots, adjacent hues stop
+ * being reliably distinguishable (see the dataviz skill's series-count
+ * ladder), and a legend row per slice stops being scannable anyway.
+ */
+function buildPieSlices(actions) {
+    const sorted = [...actions].sort((a, b) => b.count - a.count);
+    const top = sorted.slice(0, PIE_MAX_SLICES);
+    const rest = sorted.slice(PIE_MAX_SLICES);
+
+    const slices = top.map((a) => ({
+        label: formatActionRowLabel(a.action, a.page),
+        count: a.count,
+    }));
+    if (rest.length > 0) {
+        slices.push({
+            label: `Other (${rest.length})`,
+            count: rest.reduce((sum, a) => sum + a.count, 0),
+        });
+    }
+    return slices;
+}
+
+function positionPieTooltip(tooltip, container, evt) {
+    const rect = container.getBoundingClientRect();
+    const x = evt.clientX !== undefined ? evt.clientX - rect.left : rect.width / 2;
+    const y = evt.clientY !== undefined ? evt.clientY - rect.top : rect.height / 2;
+    tooltip.style.left = `${x}px`;
+    tooltip.style.top = `${y}px`;
+}
+
+function wirePieTooltips(container) {
+    const tooltip = container.querySelector(".pie-tooltip");
+    if (!tooltip) return;
+
+    container.querySelectorAll(".pie-slice").forEach((slice) => {
+        const show = (evt) => {
+            // textContent, not innerHTML: action/page strings ultimately come
+            // from the public track-click endpoint, so treat their labels as
+            // untrusted even though they're already escaped once upstream.
+            tooltip.textContent = "";
+            const value = document.createElement("span");
+            value.className = "pie-tooltip-value";
+            value.textContent = slice.dataset.count;
+            const label = document.createElement("span");
+            label.className = "pie-tooltip-label";
+            label.textContent = `${slice.dataset.label} · ${slice.dataset.percent}%`;
+            tooltip.append(value, label);
+            tooltip.classList.remove("hidden");
+            positionPieTooltip(tooltip, container, evt);
+            slice.classList.add("pie-slice-active");
+        };
+        const hide = () => {
+            tooltip.classList.add("hidden");
+            slice.classList.remove("pie-slice-active");
+        };
+
+        slice.addEventListener("pointerenter", show);
+        slice.addEventListener("pointermove", (evt) => positionPieTooltip(tooltip, container, evt));
+        slice.addEventListener("pointerleave", hide);
+        slice.addEventListener("focus", show);
+        slice.addEventListener("blur", hide);
+    });
+}
+
+function renderActivityPieChart(actions) {
+    const chartEl = document.getElementById("activityPieChart");
+    const legendEl = document.getElementById("activityPieLegend");
+    if (!chartEl || !legendEl) return;
+
+    if (actions.length === 0) {
+        chartEl.innerHTML = "";
+        legendEl.innerHTML = "";
+        return;
+    }
+
+    const slices = buildPieSlices(actions);
+    const total = slices.reduce((sum, s) => sum + s.count, 0);
+    const size = 200;
+    const cx = size / 2;
+    const cy = size / 2;
+    const r = 90;
+
+    let angle = 0;
+    const paths = slices
+        .map((slice, i) => {
+            const fraction = slice.count / total;
+            const startAngle = angle;
+            const endAngle = angle + fraction * 360;
+            angle = endAngle;
+            const color = i < PIE_COLORS.length ? PIE_COLORS[i] : PIE_OTHER_COLOR;
+            const percent = Math.round(fraction * 100);
+            const label = escapeHtml(slice.label);
+            return `
+            <path
+                d="${describePieSlice(cx, cy, r, startAngle, endAngle)}"
+                fill="${color}"
+                class="pie-slice"
+                tabindex="0"
+                aria-label="${label}: ${slice.count} (${percent}%)"
+                data-label="${label}"
+                data-count="${slice.count}"
+                data-percent="${percent}"
+            ></path>
+        `;
+        })
+        .join("");
+
+    chartEl.innerHTML = `
+        <svg viewBox="0 0 ${size} ${size}" class="pie-svg" role="img" aria-label="Click breakdown by action">${paths}</svg>
+        <div class="pie-tooltip hidden"></div>
+    `;
+
+    legendEl.innerHTML = slices
+        .map((slice, i) => {
+            const color = i < PIE_COLORS.length ? PIE_COLORS[i] : PIE_OTHER_COLOR;
+            const percent = Math.round((slice.count / total) * 100);
+            return `
+            <div class="pie-legend-row">
+                <span class="pie-legend-swatch" style="background:${color}"></span>
+                <span class="pie-legend-label">${escapeHtml(slice.label)}</span>
+                <span class="pie-legend-value">${slice.count} <span class="muted">(${percent}%)</span></span>
+            </div>
+        `;
+        })
+        .join("");
+
+    wirePieTooltips(chartEl);
+}
+
+async function loadBusinessActivity(businessId, startDate, endDate) {
     const breakdown = document.getElementById("activityBreakdown");
     if (!breakdown) return;
 
     try {
-        const actions = await API.get(`/api/business/${businessId}/click-logs/summary`);
+        const params = new URLSearchParams();
+        if (startDate) params.set("start_date", startDate);
+        if (endDate) params.set("end_date", endDate);
+        const query = params.toString();
+        const url = `/api/business/${businessId}/click-logs/summary${query ? `?${query}` : ""}`;
+        const actions = await API.get(url);
+        const hasDateFilter = Boolean(startDate || endDate);
+
+        renderActivityPieChart(actions);
 
         // "qr_scan" is recorded on both the review and social landing pages,
         // so there can be two separate rows for it here (one per page) —
@@ -403,7 +651,9 @@ async function loadBusinessActivity(businessId) {
             : "—";
 
         if (actions.length === 0) {
-            breakdown.innerHTML = `<p class="muted">No activity recorded yet.</p>`;
+            breakdown.innerHTML = hasDateFilter
+                ? `<p class="muted">No activity in this date range.</p>`
+                : `<p class="muted">No activity recorded yet.</p>`;
             return;
         }
 
@@ -426,6 +676,7 @@ async function loadBusinessActivity(businessId) {
             .join("");
     } catch (err) {
         breakdown.innerHTML = `<p class="form-error">${err.message}</p>`;
+        renderActivityPieChart([]);
     }
 }
 

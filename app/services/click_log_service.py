@@ -1,11 +1,45 @@
 """Business logic for recording and reading button-click activity logs."""
 
+from datetime import datetime, timedelta, timezone
+
 from fastapi import HTTPException, status
 
 from app.models.click_log import build_click_log_document
 from app.repositories.business_repository import BusinessRepository
 from app.repositories.click_log_repository import ClickLogRepository
 from app.utils.helper import serialize_doc
+
+# India Standard Time has no DST, so a fixed UTC+5:30 offset is always
+# correct (unlike most timezones, this doesn't need the IANA tzdata).
+IST = timezone(timedelta(hours=5, minutes=30))
+
+
+def _parse_ist_day(date_str: str) -> datetime:
+    """Parses a "YYYY-MM-DD" calendar date (as picked in the admin's IST-facing UI)."""
+    try:
+        return datetime.strptime(date_str, "%Y-%m-%d").replace(tzinfo=IST)
+    except ValueError:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid date, expected YYYY-MM-DD.")
+
+
+def _ist_range_to_utc(start_date: str | None, end_date: str | None) -> tuple[datetime, datetime] | tuple[None, None]:
+    """
+    Turns an inclusive "YYYY-MM-DD" to "YYYY-MM-DD" IST calendar-date range
+    into the [start, end) UTC datetime range covering it, since
+    `created_at` is stored in UTC but displayed to admins in IST. A single
+    open end defaults to the other end, so picking just one date scopes to
+    that single day.
+    """
+    if not start_date and not end_date:
+        return None, None
+    start_date = start_date or end_date
+    end_date = end_date or start_date
+
+    start = _parse_ist_day(start_date).astimezone(timezone.utc)
+    end = _parse_ist_day(end_date).astimezone(timezone.utc) + timedelta(days=1)
+    if start >= end:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="start_date must not be after end_date.")
+    return start, end
 
 
 class ClickLogService:
@@ -31,14 +65,21 @@ class ClickLogService:
         )
         await self.click_log_repo.create(doc)
 
-    async def get_business_summary(self, owner_id: str, business_id: str) -> list[dict]:
+    async def get_business_summary(
+        self,
+        owner_id: str,
+        business_id: str,
+        start_date: str | None = None,
+        end_date: str | None = None,
+    ) -> list[dict]:
         business = await self.business_repo.get_by_id(business_id)
         if not business:
             raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Business not found.")
         if business["owner_id"] != owner_id:
             raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Not authorized.")
 
-        rows = await self.click_log_repo.aggregate_action_counts(business_id)
+        start, end = _ist_range_to_utc(start_date, end_date)
+        rows = await self.click_log_repo.aggregate_action_counts(business_id, start=start, end=end)
         return [
             {
                 "page": row["_id"]["page"],

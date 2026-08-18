@@ -1,5 +1,6 @@
 """Data access layer for the `click_logs` collection."""
 
+from datetime import datetime
 from typing import Any
 
 from motor.motor_asyncio import AsyncIOMotorDatabase
@@ -31,7 +32,12 @@ class ClickLogRepository:
         query = {"business_id": business_id} if business_id else {}
         return await self.collection.count_documents(query)
 
-    async def aggregate_action_counts(self, business_id: str) -> list[dict[str, Any]]:
+    async def aggregate_action_counts(
+        self,
+        business_id: str,
+        start: datetime | None = None,
+        end: datetime | None = None,
+    ) -> list[dict[str, Any]]:
         """
         Per-button click counts + last-clicked time for one business.
 
@@ -39,9 +45,21 @@ class ClickLogRepository:
         recorded on both the review and social landing pages, so grouping
         by action only would silently merge Review-QR scans and Social-QR
         scans into one combined count.
+
+        If `start`/`end` are given, only clicks with `start <= created_at < end`
+        are counted (used to scope the summary to a single calendar day).
         """
+        match: dict[str, Any] = {"business_id": business_id}
+        if start is not None or end is not None:
+            created_at_range: dict[str, Any] = {}
+            if start is not None:
+                created_at_range["$gte"] = start
+            if end is not None:
+                created_at_range["$lt"] = end
+            match["created_at"] = created_at_range
+
         pipeline = [
-            {"$match": {"business_id": business_id}},
+            {"$match": match},
             {
                 "$group": {
                     "_id": {"page": "$page", "action": "$action"},
