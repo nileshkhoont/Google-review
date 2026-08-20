@@ -125,6 +125,8 @@ document.addEventListener("DOMContentLoaded", async () => {
     }
 
     const regenerateBtn = document.getElementById("regenerateReviewBtn");
+    const topRegenerateBtn = document.getElementById("topRegenerateReviewBtn");
+    const aspectContainer = document.getElementById("customerReviewAspects");
 
     const ratingSelector = document.getElementById("ratingSelector");
     const ratingStars = ratingSelector ? Array.from(ratingSelector.querySelectorAll(".rating-star")) : [];
@@ -195,6 +197,17 @@ document.addEventListener("DOMContentLoaded", async () => {
             document.querySelectorAll("#customerReviewAspects input[type='checkbox']:checked"))
             .map(item => item.value);
     }
+
+    function updateTopRegenerateVisibility() {
+        topRegenerateBtn.classList.toggle("hidden", getSelectedReviewAspects().length === 0);
+    }
+
+    aspectContainer.addEventListener("change", updateTopRegenerateVisibility);
+
+    topRegenerateBtn.addEventListener("click", () => {
+        trackClick(trackEndpoint, "generate_review");
+        generateReview();
+    });
 
     function renderReviewIndicators() {
         reviewIndicators.innerHTML = "";
