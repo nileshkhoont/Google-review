@@ -730,6 +730,12 @@ async function initEditBusinessPage() {
         const qrTitleInput = form.querySelector("#qrTitle");
         if (qrTitleInput) qrTitleInput.value = biz.qr_title || "";
 
+        const gujaratiCheckbox = form.querySelector("#enableGujarati");
+        if (gujaratiCheckbox) gujaratiCheckbox.checked = Boolean(biz.enable_gujarati);
+
+        const hindiCheckbox = form.querySelector("#enableHindi");
+        if (hindiCheckbox) hindiCheckbox.checked = Boolean(biz.enable_hindi);
+
         const colorInput = form.querySelector("#primaryColor");
         if (colorInput) {
             colorInput.value = biz.primary_color || DEFAULT_PRIMARY_COLOR;

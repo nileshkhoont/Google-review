@@ -70,6 +70,8 @@ class BusinessService:
             custom_links=[link.model_dump() for link in data.custom_links],
             qr_title=data.qr_title,
             primary_color=data.primary_color,
+            enable_gujarati=data.enable_gujarati,
+            enable_hindi=data.enable_hindi,
         )
         await self.business_repo.create(business_doc)
 

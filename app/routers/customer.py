@@ -27,6 +27,8 @@ def _to_customer_response(business: dict) -> CustomerBusinessResponse:
         logo_path=business.get("logo_path"),
         google_review_link=business["google_review_link"],
         review_aspects=business.get("review_aspects", []),
+        enable_gujarati=business.get("enable_gujarati", True),
+        enable_hindi=business.get("enable_hindi", True),
         combined_only=business.get("combined_only", False),
         is_active=business.get("is_active", True),
         social_is_active=business.get("social_is_active", True),

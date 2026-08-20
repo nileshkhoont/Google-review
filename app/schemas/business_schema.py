@@ -80,6 +80,11 @@ class BusinessCreateRequest(BaseModel):
     qr_title: str | None = Field(default=None, max_length=150)
     primary_color: str | None = None
 
+    # Whether the customer-facing review page offers a Gujarati/Hindi
+    # translation of the generated review, alongside the default English.
+    enable_gujarati: bool = True
+    enable_hindi: bool = True
+
     @field_validator("google_review_link")
     @classmethod
     def validate_review_link(cls, value: str) -> str:
@@ -116,6 +121,9 @@ class BusinessUpdateRequest(BaseModel):
 
     qr_title: str | None = Field(default=None, max_length=150)
     primary_color: str | None = None
+
+    enable_gujarati: bool = True
+    enable_hindi: bool = True
 
     @field_validator("google_review_link")
     @classmethod
@@ -159,6 +167,8 @@ class BusinessResponse(BaseModel):
     logo_path: str | None = None
     qr_title: str | None = None
     primary_color: str | None = None
+    enable_gujarati: bool = True
+    enable_hindi: bool = True
     is_active: bool = True
     social_is_active: bool = True
     combined_is_active: bool = True

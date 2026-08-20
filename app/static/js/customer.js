@@ -23,6 +23,7 @@ document.addEventListener("DOMContentLoaded", async () => {
     let reviewList = [];
     let currentReviewIndex = 0;
     let currentLanguage = "en";
+    let translationEnabled = false;
 
     try {
         const business = await API.get(`/api/customer/${slug}`);
@@ -52,6 +53,10 @@ document.addEventListener("DOMContentLoaded", async () => {
             logoEl.src = logoUrl;
             logoEl.classList.remove("hidden");
         }
+
+        document.getElementById("gujaratiLanguageBtn").classList.toggle("hidden", !business.enable_gujarati);
+        document.getElementById("hindiLanguageBtn").classList.toggle("hidden", !business.enable_hindi);
+        translationEnabled = Boolean(business.enable_gujarati || business.enable_hindi);
     } catch (err) {
         document.getElementById("customerInteractive").classList.add("hidden");
 
@@ -334,7 +339,7 @@ document.addEventListener("DOMContentLoaded", async () => {
             currentLanguage = "en";
 
 
-            languageSelector.classList.remove("hidden");
+            languageSelector.classList.toggle("hidden", !translationEnabled);
 
             renderReview();
 

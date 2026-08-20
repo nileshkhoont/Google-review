@@ -1,5 +1,5 @@
 {% extends "base.html" %}
-{% block title %}Create Business — ReviewQR-AI{% endblock %}
+{% block title %}Create Business — MOVYA-Smart AI Review{% endblock %}
 
 {% block content %}
 <section class="form-page" data-requires-auth>
@@ -40,6 +40,21 @@
                 </div>
             </div>
             <input type="hidden" id="reviewAspects" name="review_aspects">
+
+            <div class="form-group">
+                <label class="form-group-title">Review Translation Languages (Optional)</label>
+                <p class="form-help">
+                    Let customers translate their generated review into these languages on the review page.
+                </p>
+                <label class="checkbox-field">
+                    <input type="checkbox" id="enableGujarati" name="enable_gujarati" checked>
+                    <span>Enable Gujarati Translation</span>
+                </label>
+                <label class="checkbox-field">
+                    <input type="checkbox" id="enableHindi" name="enable_hindi" checked>
+                    <span>Enable Hindi Translation</span>
+                </label>
+            </div>
 
             <div class="form-group social-links-group">
                 <label class="form-group-title">Social Media Links (Optional)</label>

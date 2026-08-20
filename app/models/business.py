@@ -23,6 +23,8 @@ def build_business_document(
     custom_links: list[dict[str, str]] | None = None,
     qr_title: str | None = None,
     primary_color: str | None = None,
+    enable_gujarati: bool = True,
+    enable_hindi: bool = True,
 ) -> dict[str, Any]:
     now = utc_now()
     return {
@@ -56,6 +58,8 @@ def build_business_document(
         "linkedin": linkedin,
         "twitter_x": twitter_x,
         "custom_links": custom_links or [],
+        "enable_gujarati": enable_gujarati,
+        "enable_hindi": enable_hindi,
         "created_at": now,
         "updated_at": now,
     }

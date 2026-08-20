@@ -95,6 +95,9 @@ document.addEventListener("DOMContentLoaded", async () => {
             logoEl.src = logoUrl;
             logoEl.classList.remove("hidden");
         }
+
+        document.getElementById("gujaratiLanguageBtn").classList.toggle("hidden", !business.enable_gujarati);
+        document.getElementById("hindiLanguageBtn").classList.toggle("hidden", !business.enable_hindi);
     } catch (err) {
         document.getElementById("customerInteractive").classList.add("hidden");
 
@@ -330,7 +333,7 @@ document.addEventListener("DOMContentLoaded", async () => {
             currentReviewIndex = 0;
             currentLanguage = "en";
 
-            languageSelector.classList.remove("hidden");
+            languageSelector.classList.toggle("hidden", !(business.enable_gujarati || business.enable_hindi));
 
             renderReview();
 

@@ -102,6 +102,7 @@ app.add_middleware(
 )
 
 app.mount("/static", StaticFiles(directory="app/static"), name="static")
+app.mount("/brand", StaticFiles(directory="app/logo"), name="brand")
 
 # JSON API routers
 app.include_router(auth.router)

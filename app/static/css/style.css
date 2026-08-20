@@ -444,6 +444,27 @@ a {
     margin: 0.3rem 0 1rem;
 }
 
+.checkbox-field {
+    display: flex;
+    align-items: center;
+    gap: 0.55rem;
+    font-size: 0.92rem;
+    color: var(--color-text);
+    cursor: pointer;
+    user-select: none;
+}
+
+.checkbox-field + .checkbox-field {
+    margin-top: 0.6rem;
+}
+
+.checkbox-field input[type="checkbox"] {
+    width: 17px;
+    height: 17px;
+    accent-color: var(--color-primary);
+    cursor: pointer;
+}
+
 /* QR poster branding — primary color picker */
 .color-picker-row {
     display: flex;
@@ -1114,8 +1135,8 @@ a {
 }
 
 .business-logo {
-    width: 68px;
-    height: 68px;
+    width: 73px;
+    height: 73px;
     border-radius: 14px;
     object-fit: cover;
     display: block;
@@ -1364,6 +1385,11 @@ a {
     overflow-y: auto;
 }
 
+.customer-landing .review-textarea {
+    min-height: 180px;
+    max-height: 180px;
+}
+
 .review-actions {
     display: flex;
     gap: 0.6rem;
@@ -1432,8 +1458,8 @@ a {
 }
 
 .social-landing-card .business-logo {
-    width: 76px;
-    height: 76px;
+    width: 81px;
+    height: 81px;
     border-radius: 20px;
     box-shadow: 0 10px 24px rgba(15, 23, 42, 0.12);
 }

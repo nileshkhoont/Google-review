@@ -36,6 +36,8 @@ class CustomerBusinessResponse(BaseModel):
     logo_path: str | None = None
     google_review_link: str
     review_aspects: list[str] = Field(default_factory=list)
+    enable_gujarati: bool = True
+    enable_hindi: bool = True
 
     # Only meaningful on the combined (/c/{slug}) page: whether the review
     # and social sections should render there at all. Legacy businesses
