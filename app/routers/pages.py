@@ -31,12 +31,16 @@ templates.env.globals["asset_version"] = str(int(time.time()))
 
 
 @router.get("/")
-async def home_page(request: Request):
+async def home_page(request: Request, user_id: str | None = Depends(get_optional_user_id)):
+    if user_id:
+        return RedirectResponse(url="/dashboard", status_code=status.HTTP_302_FOUND)
     return templates.TemplateResponse(request, "index.html")
 
 
 @router.get("/login")
-async def login_page(request: Request):
+async def login_page(request: Request, user_id: str | None = Depends(get_optional_user_id)):
+    if user_id:
+        return RedirectResponse(url="/dashboard", status_code=status.HTTP_302_FOUND)
     return templates.TemplateResponse(request, "login.html")
 
 
